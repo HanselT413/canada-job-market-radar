@@ -17,7 +17,9 @@ import yaml
 
 from radar.clean import clean_jobs
 from radar.db import ROOT, connect, load_named_queries, upsert_jobs
+from radar.premium import skill_premiums
 from radar.skills import SkillExtractor
+from radar.trends import skill_trends, weekly_skill_share
 
 DEFAULT_DB = ROOT / "data" / "radar.db"
 SAMPLE_PATH = ROOT / "data" / "sample" / "sample_jobs.json"
@@ -106,6 +108,20 @@ def run_export(db_path: Path, out_dir: Path = EXPORT_DIR) -> None:
                 writer.writerow(headers)
                 writer.writerows(rows)
             print(f"  {name}.csv ({len(rows)} rows)")
+
+        weekly = weekly_skill_share(conn)
+        weekly.to_csv(out_dir / "skill_share_by_week.csv", index=False)
+        print(f"  skill_share_by_week.csv ({len(weekly)} rows)")
+
+        trends = skill_trends(conn)
+        trends.to_csv(out_dir / "skill_trends.csv", index=False)
+        rising = trends[trends["signal"] == "RISING"]["skill"].tolist() if not trends.empty else []
+        print(f"  skill_trends.csv ({len(trends)} rows) | rising: {', '.join(rising) or 'none yet'}")
+
+        premiums, summary = skill_premiums(conn)
+        premiums.to_csv(out_dir / "skill_premiums.csv", index=False)
+        print(f"  skill_premiums.csv ({len(premiums)} rows) | model n={summary.get('n')}, "
+              f"R²={summary.get('r_squared', 'n/a')}")
     print(f"Exports written to {out_dir}")
 
 

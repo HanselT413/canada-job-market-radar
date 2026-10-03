@@ -6,7 +6,9 @@ Each phase is a self-contained, demoable milestone that can be pushed to GitHub 
 - Adzuna + Greenhouse + Lever collection, cleaning, dedupe
 - Dictionary-based skill extraction
 - SQLite storage and six analysis queries
-- CSV exports and a Tableau Public dashboard (skill demand, salary by skill, top employers)
+- Skill trend early-warning (weekly share change, z-test, Benjamini–Hochberg FDR)
+- Skill salary premium (log-salary OLS with seniority / role / city controls, HC3 errors)
+- CSV exports and a Tableau Public dashboard (skill demand, rising skills, skill premiums, top employers)
 
 **Deliverable:** live dashboard link in the README + a short "what I found" write-up.
 

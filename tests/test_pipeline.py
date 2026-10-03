@@ -4,6 +4,8 @@ import sqlite3
 from radar.clean import clean_jobs, strip_html, tag_role_family, tag_seniority
 from radar.db import load_named_queries
 from radar.pipeline import SAMPLE_PATH, filter_location, run_export, run_fetch
+from radar.premium import skill_premiums
+from radar.trends import _bh_qvalues, skill_trends
 from radar.skills import SkillExtractor
 from radar.sources.adzuna import normalize_adzuna
 from radar.sources.ats import normalize_lever
@@ -66,4 +68,29 @@ def test_end_to_end_sample(tmp_path):
 
     out = tmp_path / "exports"
     run_export(db, out)
-    assert {p.stem for p in out.glob("*.csv")} == set(load_named_queries())
+    expected = set(load_named_queries()) | {"skill_share_by_week", "skill_trends", "skill_premiums"}
+    assert {p.stem for p in out.glob("*.csv")} == expected
+
+
+def test_bh_qvalues():
+    q = _bh_qvalues([0.01, 0.04, 0.03, 0.5])
+    assert q == [0.04, 0.0533, 0.0533, 0.5]
+
+
+def test_analysis_recovers_planted_signals(tmp_path):
+    """Sample data plants: dbt demand rising, dbt ~+10% and Python ~+6% salary premium."""
+    db = tmp_path / "radar.db"
+    run_fetch(db, sample=True)
+    conn = sqlite3.connect(db)
+
+    trends = skill_trends(conn).set_index("skill")
+    assert trends.loc["dbt", "signal"] == "RISING"
+    assert (trends["signal"] == "RISING").sum() == 1  # no false positives after FDR correction
+
+    premiums, summary = skill_premiums(conn)
+    premiums = premiums.set_index("skill")
+    assert summary["n"] > 100
+    for skill, planted in [("dbt", 10.0), ("Python", 6.0)]:
+        row = premiums.loc[skill]
+        assert row["significant"]
+        assert row["ci_low_pct"] <= planted <= row["ci_high_pct"]
