@@ -1,0 +1,30 @@
+# What to search. Edit this file to change the radar's scope.
+
+adzuna:
+  where: Toronto
+  pages_per_query: 2        # 50 results per page
+  max_days_old: 30
+  queries:
+    - data analyst
+    - product analyst
+    - business analyst
+    - business intelligence analyst
+    - analytics new grad
+    - risk analyst
+    - aml analyst
+
+# Target companies on public ATS boards. The token is the slug in the company's
+# careers URL, e.g. boards.greenhouse.io/<token> or jobs.lever.co/<company>.
+# Verify each slug before relying on it; companies switch ATS vendors.
+greenhouse: []
+#  - {token: example-company, company: Example Company}
+lever: []
+#  - {company: example-company, display: Example Company}
+
+# Keep only postings whose location contains one of these (case-insensitive).
+# Leave empty to keep everything.
+location_filter:
+  - toronto
+  - ontario
+  - canada
+  - remote

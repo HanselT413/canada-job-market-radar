@@ -1,0 +1,36 @@
+# Skill dictionary used to extract skills from job descriptions.
+# key = canonical skill name; values = regex aliases (case-insensitive, word-bounded).
+# Add or edit freely; no code changes needed.
+
+technical:
+  SQL: ["sql", "t-sql", "pl/sql", "postgres(ql)?", "mysql", "snowflake", "bigquery"]
+  Python: ["python", "pandas", "numpy", "scikit-learn", "sklearn"]
+  R: ["r programming", "rstudio", "tidyverse", "python (or|and|/) ?r", "r ?(or|and|/) ?python"]
+  Excel: ["excel", "vba", "pivot tables?"]
+  Tableau: ["tableau"]
+  Power BI: ["power ?bi", "dax"]
+  Looker: ["looker"]
+  dbt: ["dbt"]
+  Spark: ["spark", "pyspark", "databricks"]
+  Cloud (AWS/Azure/GCP): ["aws", "azure", "gcp", "google cloud"]
+  Git: ["git", "github"]
+
+analytics_methods:
+  A/B Testing: ["a/b test(ing)?", "ab test(ing)?", "experimentation", "split test(ing)?"]
+  Statistics: ["statistic(s|al)", "hypothesis test(ing)?", "regression"]
+  Machine Learning: ["machine learning", "predictive model(l)?ing", "\\bml\\b"]
+  Forecasting: ["forecast(ing)?", "time series"]
+  Product Metrics: ["kpis?", "funnel", "retention", "cohort", "north star"]
+  Data Visualization: ["data visuali[sz]ation", "dashboard(s|ing)?"]
+  ETL / Data Pipelines: ["etl", "elt", "data pipelines?"]
+
+business_domain:
+  Financial Services: ["bank(ing)?", "financial services", "wealth management", "capital markets"]
+  Risk / AML: ["aml", "anti[- ]money laundering", "kyc", "fraud", "financial crime"]
+  CRM: ["crm", "salesforce"]
+  Stakeholder Management: ["stakeholders?"]
+  Communication: ["communication skills", "storytelling", "present(ing|ation)s? to"]
+
+languages:
+  French: ["french", "bilingual"]
+  Mandarin: ["mandarin", "chinese"]
