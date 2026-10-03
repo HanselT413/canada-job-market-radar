@@ -13,13 +13,21 @@ ANALYSIS_PATH = ROOT / "sql" / "analysis.sql"
 JOB_COLUMNS = [
     "job_id", "source", "title", "company", "location", "province", "description",
     "salary_min", "salary_max", "salary_is_predicted", "category", "contract_time",
-    "seniority", "role_family", "posted_at", "url", "search_query", "dedupe_key",
+    "seniority", "role_family", "is_staffing_agency", "full_description", "posted_at", "url", "search_query", "dedupe_key",
 ]
+
+
+NEW_COLUMNS = {"is_staffing_agency": "INTEGER DEFAULT 0", "full_description": "INTEGER DEFAULT 0"}
 
 
 def connect(db_path: Path | str) -> sqlite3.Connection:
     conn = sqlite3.connect(db_path)
     conn.executescript(SCHEMA_PATH.read_text())
+    # Upgrade databases created by an earlier version of the schema
+    existing = {row[1] for row in conn.execute("PRAGMA table_info(jobs)")}
+    for col, decl in NEW_COLUMNS.items():
+        if col not in existing:
+            conn.execute(f"ALTER TABLE jobs ADD COLUMN {col} {decl}")
     return conn
 
 

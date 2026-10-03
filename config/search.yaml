@@ -13,18 +13,46 @@ adzuna:
     - risk analyst
     - aml analyst
 
-# Target companies on public ATS boards. The token is the slug in the company's
-# careers URL, e.g. boards.greenhouse.io/<token> or jobs.lever.co/<company>.
-# Verify each slug before relying on it; companies switch ATS vendors.
-greenhouse: []
-#  - {token: example-company, company: Example Company}
-lever: []
-#  - {company: example-company, display: Example Company}
+# Target companies on public ATS boards (official public APIs, full job descriptions).
+# The token is the slug in the company's careers URL. Verified October 2026;
+# companies switch ATS vendors, so a board that starts failing is skipped with a note.
+greenhouse:
+  - {token: tenstorrent, company: Tenstorrent}
+  - {token: instacart, company: Instacart}
+  - {token: faire, company: Faire}
+  - {token: geotab, company: Geotab}
+  - {token: hootsuite, company: Hootsuite}
+lever:
+  - {company: applydigital, display: Apply Digital}
+  - {company: achievers, display: Achievers}
+  - {company: waabi, display: Waabi}
+  - {company: kepler, display: Kepler Communications}
+  - {company: fullscript, display: Fullscript}
+  - {company: riocan, display: RioCan}
+ashby:
+  - {org: wealthsimple, company: Wealthsimple}
+  - {org: cohere, company: Cohere}
+  - {org: 1password, company: 1Password}
+  - {org: koho, company: KOHO}
+
+# Company boards list every role, so keep only titles containing one of these.
+# (Adzuna results are already scoped by the search queries above.)
+ats_title_filter:
+  - analyst
+  - analytics
+  - data
+  - insights
+  - business intelligence
+  - scientist
+  - risk
 
 # Keep only postings whose location contains one of these (case-insensitive).
-# Leave empty to keep everything.
+# "Remote (Canada)" matches "canada"; plain US-remote roles are dropped.
 location_filter:
   - toronto
   - ontario
   - canada
-  - remote
+  - mississauga
+  - ottawa
+  - waterloo
+  - kitchener

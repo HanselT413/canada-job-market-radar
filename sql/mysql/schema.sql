@@ -22,6 +22,8 @@ CREATE TABLE jobs (
     contract_time       VARCHAR(50),
     seniority           VARCHAR(20),
     role_family         VARCHAR(50),
+    is_staffing_agency  TINYINT DEFAULT 0,
+    full_description    TINYINT DEFAULT 0,
     posted_at           DATETIME NULL,
     url                 VARCHAR(1000),
     search_query        VARCHAR(200),

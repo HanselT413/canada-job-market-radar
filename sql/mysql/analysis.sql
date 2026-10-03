@@ -38,13 +38,13 @@ GROUP BY s.skill
 HAVING COUNT(*) >= 3
 ORDER BY avg_salary_mid DESC;
 
--- 4. Top hiring companies
+-- 4. Top hiring companies (direct employers only)
 SELECT
     company,
     COUNT(*) AS open_roles,
     GROUP_CONCAT(DISTINCT role_family ORDER BY role_family SEPARATOR ', ') AS role_families
 FROM jobs
-WHERE company <> ''
+WHERE company <> '' AND is_staffing_agency = 0
 GROUP BY company
 ORDER BY open_roles DESC
 LIMIT 25;
@@ -79,3 +79,23 @@ FROM (
 ) ranked
 WHERE skill_rank <= 5
 ORDER BY role_family, skill_rank;
+
+-- 8. Agency vs direct-employer share
+SELECT
+    CASE WHEN is_staffing_agency = 1 THEN 'Agency' ELSE 'Direct employer' END AS poster_type,
+    COUNT(*) AS postings,
+    ROUND(100.0 * COUNT(*) / (SELECT COUNT(*) FROM jobs), 1) AS pct_of_postings
+FROM jobs
+GROUP BY poster_type;
+
+-- 9. Skill demand using full job descriptions only (company boards)
+SELECT
+    s.skill,
+    COUNT(DISTINCT s.job_id) AS postings,
+    ROUND(100.0 * COUNT(DISTINCT s.job_id)
+          / (SELECT COUNT(*) FROM jobs WHERE full_description = 1), 1) AS pct_of_postings
+FROM job_skills s
+JOIN jobs j ON j.job_id = s.job_id
+WHERE j.full_description = 1
+GROUP BY s.skill
+ORDER BY postings DESC;

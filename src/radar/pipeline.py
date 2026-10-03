@@ -16,7 +16,7 @@ from pathlib import Path
 import yaml
 
 from radar.clean import clean_jobs
-from radar.db import ROOT, connect, load_named_queries, upsert_jobs
+from radar.db import JOB_COLUMNS, ROOT, connect, load_named_queries, upsert_jobs
 from radar.premium import skill_premiums
 from radar.skills import SkillExtractor
 from radar.trends import skill_trends, weekly_skill_share
@@ -39,7 +39,8 @@ def load_env(path: Path = ROOT / ".env") -> None:
 
 def collect_live(config: dict) -> list[dict]:
     from radar.sources.adzuna import fetch_adzuna, normalize_adzuna
-    from radar.sources.ats import fetch_greenhouse, fetch_lever, normalize_greenhouse, normalize_lever
+    from radar.sources.ats import (fetch_ashby, fetch_greenhouse, fetch_lever, normalize_ashby,
+                                  normalize_greenhouse, normalize_lever)
 
     jobs: list[dict] = []
     az = config.get("adzuna") or {}
@@ -64,6 +65,14 @@ def collect_live(config: dict) -> list[dict]:
             print(f"  lever {board['company']}: {len(raw)}")
         except Exception as exc:
             print(f"  lever {board['company']}: skipped ({exc})")
+
+    for board in config.get("ashby") or []:
+        try:
+            raw = fetch_ashby(board["org"])
+            jobs += [normalize_ashby(r, board["company"]) for r in raw]
+            print(f"  ashby {board['company']}: {len(raw)}")
+        except Exception as exc:
+            print(f"  ashby {board['company']}: skipped ({exc})")
     return jobs
 
 
@@ -72,6 +81,15 @@ def filter_location(jobs: list[dict], keywords: list[str]) -> list[dict]:
         return jobs
     kws = [k.lower() for k in keywords]
     return [j for j in jobs if any(k in (j.get("location") or "").lower() for k in kws)]
+
+
+def filter_ats_titles(jobs: list[dict], keywords: list[str]) -> list[dict]:
+    """Company boards list all roles; keep analytics-type titles. Adzuna rows pass through."""
+    if not keywords:
+        return jobs
+    kws = [k.lower() for k in keywords]
+    return [j for j in jobs
+            if j.get("source") == "adzuna" or any(k in (j.get("title") or "").lower() for k in kws)]
 
 
 def run_fetch(db_path: Path, sample: bool) -> None:
@@ -84,6 +102,7 @@ def run_fetch(db_path: Path, sample: bool) -> None:
         print("Fetching live postings...")
         jobs = collect_live(config)
 
+    jobs = filter_ats_titles(jobs, config.get("ats_title_filter") or [])
     jobs = filter_location(jobs, config.get("location_filter") or [])
     jobs = clean_jobs(jobs)
     extractor = SkillExtractor()
@@ -138,8 +157,13 @@ def run_export_tables(db_path: Path, out_dir: Path = EXPORT_DIR / "tables") -> N
     """Dump the raw jobs and job_skills tables as CSV for loading into MySQL."""
     out_dir.mkdir(parents=True, exist_ok=True)
     with connect(db_path) as conn:
-        for table in ("jobs", "job_skills"):
-            cur = conn.execute(f"SELECT * FROM {table}")
+        # Explicit column order so the CSV always matches sql/mysql/load_data.sql
+        tables = {
+            "jobs": JOB_COLUMNS + ["first_seen_at", "last_seen_at"],
+            "job_skills": ["job_id", "skill_group", "skill"],
+        }
+        for table, columns in tables.items():
+            cur = conn.execute(f"SELECT {', '.join(columns)} FROM {table}")
             headers = [d[0] for d in cur.description]
             rows = cur.fetchall()
             with open(out_dir / f"{table}.csv", "w", newline="") as f:

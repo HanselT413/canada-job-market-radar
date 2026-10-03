@@ -3,7 +3,7 @@
 
 CREATE TABLE IF NOT EXISTS jobs (
     job_id              TEXT PRIMARY KEY,
-    source              TEXT NOT NULL,          -- adzuna | greenhouse | lever
+    source              TEXT NOT NULL,          -- adzuna | greenhouse | lever | ashby
     title               TEXT NOT NULL,
     company             TEXT,
     location            TEXT,
@@ -16,6 +16,8 @@ CREATE TABLE IF NOT EXISTS jobs (
     contract_time       TEXT,
     seniority           TEXT,                   -- intern | new_grad | mid | senior | manager
     role_family         TEXT,                   -- data_analyst | product_analyst | ...
+    is_staffing_agency  INTEGER DEFAULT 0,      -- 1 = posted by a recruitment agency
+    full_description    INTEGER DEFAULT 0,      -- 1 = full JD (company board), 0 = snippet (Adzuna)
     posted_at           TEXT,
     url                 TEXT,
     search_query        TEXT,

@@ -105,3 +105,48 @@ def test_mysql_export(tmp_path):
     run_export_tables(db, tmp_path / "tables")
     assert (tmp_path / "tables" / "jobs.csv").exists()
     assert (tmp_path / "tables" / "job_skills.csv").exists()
+
+
+def test_staffing_agency_flag():
+    from radar.clean import is_staffing_agency
+    assert is_staffing_agency("Insight Global") == 1
+    assert is_staffing_agency("Acme Staffing Solutions") == 1
+    assert is_staffing_agency("TD Bank") == 0
+    assert is_staffing_agency("") == 0
+
+
+def test_ats_title_filter():
+    from radar.pipeline import filter_ats_titles
+    jobs = [
+        {"source": "greenhouse", "title": "Senior Software Engineer"},
+        {"source": "greenhouse", "title": "Data Analyst, Growth"},
+        {"source": "adzuna", "title": "Anything"},  # Adzuna is already query-scoped
+    ]
+    kept = filter_ats_titles(jobs, ["analyst", "data"])
+    assert [j["title"] for j in kept] == ["Data Analyst, Growth", "Anything"]
+
+
+def test_ashby_normalizer():
+    from radar.sources.ats import normalize_ashby
+    job = normalize_ashby({"id": "x1", "title": "Analytics Engineer", "location": "Remote (Canada)",
+                           "secondaryLocations": [{"location": "Toronto"}],
+                           "descriptionPlain": "SQL and dbt", "publishedAt": "2026-09-30T00:00:00Z"},
+                          "KOHO")
+    assert job["job_id"] == "ashby_x1" and job["location"] == "Remote (Canada) / Toronto"
+    assert clean_jobs([job])[0]["full_description"] == 1
+
+
+def test_old_database_is_upgraded(tmp_path):
+    """A database made before the new columns existed should gain them automatically."""
+    from radar.db import connect
+    db = tmp_path / "old.db"
+    from radar.db import SCHEMA_PATH
+    previous_schema = "\n".join(
+        line for line in SCHEMA_PATH.read_text().splitlines()
+        if "is_staffing_agency" not in line and "full_description" not in line
+    )
+    old = sqlite3.connect(db)
+    old.executescript(previous_schema)
+    old.close()
+    cols = {r[1] for r in connect(db).execute("PRAGMA table_info(jobs)")}
+    assert {"is_staffing_agency", "full_description"} <= cols

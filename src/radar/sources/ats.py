@@ -1,7 +1,8 @@
-"""Greenhouse and Lever public job board APIs (no key needed).
+"""Greenhouse, Lever and Ashby public job board APIs (no key needed).
 
 Greenhouse: https://boards-api.greenhouse.io/v1/boards/{token}/jobs?content=true
 Lever:      https://api.lever.co/v0/postings/{company}?mode=json
+Ashby:      https://api.ashbyhq.com/posting-api/job-board/{org}
 """
 from __future__ import annotations
 
@@ -70,5 +71,37 @@ def normalize_lever(raw: dict, company: str) -> dict:
         "contract_time": categories.get("commitment", ""),
         "posted_at": posted,
         "url": raw.get("hostedUrl", ""),
+        "search_query": "",
+    }
+
+
+# Ashby public job board API: https://api.ashbyhq.com/posting-api/job-board/{org}
+ASHBY_URL = "https://api.ashbyhq.com/posting-api/job-board/{org}"
+
+
+def fetch_ashby(org: str) -> list[dict]:
+    resp = requests.get(ASHBY_URL.format(org=org), timeout=30)
+    resp.raise_for_status()
+    return [j for j in resp.json().get("jobs", []) if j.get("isListed", True)]
+
+
+def normalize_ashby(raw: dict, company: str) -> dict:
+    locations = [raw.get("location") or ""]
+    locations += [s.get("location", "") for s in raw.get("secondaryLocations") or [] if isinstance(s, dict)]
+    return {
+        "job_id": f"ashby_{raw.get('id')}",
+        "source": "ashby",
+        "title": raw.get("title", ""),
+        "company": company,
+        "location": " / ".join(loc for loc in locations if loc),
+        "province": "",
+        "description": raw.get("descriptionPlain") or raw.get("descriptionHtml") or "",
+        "salary_min": None,
+        "salary_max": None,
+        "salary_is_predicted": 0,
+        "category": raw.get("department") or "",
+        "contract_time": raw.get("employmentType") or "",
+        "posted_at": raw.get("publishedAt", ""),
+        "url": raw.get("jobUrl", ""),
         "search_query": "",
     }

@@ -1,0 +1,34 @@
+# Staffing / recruitment agencies. Postings from these are flagged (is_staffing_agency = 1)
+# so employer rankings can show direct employers separately.
+# Match is case-insensitive on the company name.
+
+names:            # exact company names seen in the data
+  - Source Code
+  - Analyst Technical Solutions
+  - Mercor
+  - Astra North Infoteck Inc.
+  - Insight Global
+  - Talent To Hire Inc.
+  - Amicis Global
+  - Robert Half
+  - Randstad
+  - Adecco
+  - Hays
+  - TEKsystems
+  - Procom
+  - Altis Recruitment
+  - Michael Page
+  - Kforce
+  - Experis
+  - Manpower
+  - Aerotek
+  - Collabera
+
+keywords:         # substrings that usually mean an agency
+  - staffing
+  - recruit
+  - talent
+  - personnel
+  - placement
+  - search group
+  - headhunt
