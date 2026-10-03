@@ -125,17 +125,44 @@ def run_export(db_path: Path, out_dir: Path = EXPORT_DIR) -> None:
     print(f"Exports written to {out_dir}")
 
 
+def _mysql_value(value):
+    """Format one value for MySQL LOAD DATA: NULL as \\N, ISO timestamps as DATETIME."""
+    if value is None or value == "":
+        return r"\N"
+    if isinstance(value, str) and len(value) >= 19 and value[4] == "-" and value[10] == "T":
+        return value[:19].replace("T", " ")
+    return value
+
+
+def run_export_tables(db_path: Path, out_dir: Path = EXPORT_DIR / "tables") -> None:
+    """Dump the raw jobs and job_skills tables as CSV for loading into MySQL."""
+    out_dir.mkdir(parents=True, exist_ok=True)
+    with connect(db_path) as conn:
+        for table in ("jobs", "job_skills"):
+            cur = conn.execute(f"SELECT * FROM {table}")
+            headers = [d[0] for d in cur.description]
+            rows = cur.fetchall()
+            with open(out_dir / f"{table}.csv", "w", newline="") as f:
+                writer = csv.writer(f)
+                writer.writerow(headers)
+                writer.writerows([_mysql_value(v) for v in row] for row in rows)
+            print(f"  {table}.csv ({len(rows)} rows)")
+    print(f"Table dumps written to {out_dir} — load them with sql/mysql/load_data.sql")
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="radar")
-    parser.add_argument("command", choices=["fetch", "export"])
+    parser.add_argument("command", choices=["fetch", "export", "export-tables"])
     parser.add_argument("--sample", action="store_true", help="use bundled sample data (no API key)")
     parser.add_argument("--db", type=Path, default=DEFAULT_DB)
     args = parser.parse_args(argv)
 
     if args.command == "fetch":
         run_fetch(args.db, args.sample)
-    else:
+    elif args.command == "export":
         run_export(args.db)
+    else:
+        run_export_tables(args.db)
     return 0
 
 

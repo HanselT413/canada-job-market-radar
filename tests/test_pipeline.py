@@ -3,7 +3,7 @@ import sqlite3
 
 from radar.clean import clean_jobs, strip_html, tag_role_family, tag_seniority
 from radar.db import load_named_queries
-from radar.pipeline import SAMPLE_PATH, filter_location, run_export, run_fetch
+from radar.pipeline import SAMPLE_PATH, _mysql_value, filter_location, run_export, run_export_tables, run_fetch
 from radar.premium import skill_premiums
 from radar.trends import _bh_qvalues, skill_trends
 from radar.skills import SkillExtractor
@@ -94,3 +94,14 @@ def test_analysis_recovers_planted_signals(tmp_path):
         row = premiums.loc[skill]
         assert row["significant"]
         assert row["ci_low_pct"] <= planted <= row["ci_high_pct"]
+
+
+def test_mysql_export(tmp_path):
+    assert _mysql_value(None) == r"\N" and _mysql_value("") == r"\N"
+    assert _mysql_value("2026-09-01T12:30:00+00:00") == "2026-09-01 12:30:00"
+    assert _mysql_value(85000.0) == 85000.0
+    db = tmp_path / "radar.db"
+    run_fetch(db, sample=True)
+    run_export_tables(db, tmp_path / "tables")
+    assert (tmp_path / "tables" / "jobs.csv").exists()
+    assert (tmp_path / "tables" / "job_skills.csv").exists()

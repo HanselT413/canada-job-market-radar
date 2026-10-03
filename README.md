@@ -65,6 +65,8 @@ python -m radar.pipeline export
 pytest
 ```
 
+**Using MySQL?** `python -m radar.pipeline export-tables` dumps the tables as CSV; `sql/mysql/` has the MySQL schema, a loader and the analysis queries. See [sql/mysql/README.md](sql/mysql/README.md).
+
 Edit `config/search.yaml` to change search terms, city, or target companies, and `config/skills.yaml` to add skills. No code changes needed.
 
 ## Design decisions
