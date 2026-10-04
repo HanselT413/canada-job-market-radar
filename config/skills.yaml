@@ -34,6 +34,20 @@ commercial_insights:
   Pricing Analysis: ["pricing", "price elasticity"]
   Marketing Analytics: ["marketing analytics", "campaign (analysis|performance|measurement)", "attribution"]
 
+ai:
+  Generative AI / LLMs: ["generative ai", "gen ?ai", "llms?", "large language models?", "foundation models?"]
+  AI Tools (ChatGPT, Copilot): ["chatgpt", "openai", "copilot", "ai tools", "ai assistants?", "ai-powered tools"]
+  Prompt Engineering: ["prompt engineering", "prompt design", "prompting"]
+  AI Agents / Automation: ["ai agents?", "agentic", "intelligent automation", "\\brpa\\b", "robotic process automation"]
+  RAG / Vector Search: ["\\brag\\b", "retrieval[- ]augmented", "vector (database|db|search|store)s?"]
+  Responsible AI / Governance: ["responsible ai", "ai governance", "ai ethics", "model risk"]
+  AI (any mention): ["artificial intelligence", "\\bai\\b"]
+
+modern_data_stack:
+  Cloud Data Warehouse: ["snowflake", "bigquery", "redshift", "synapse"]
+  Databricks: ["databricks"]
+  Airflow / Orchestration: ["airflow", "dagster", "prefect"]
+
 product_management:
   Roadmapping: ["roadmaps?", "roadmapping"]
   User Research: ["user research", "customer (discovery|interviews?)", "usability test(ing)?"]

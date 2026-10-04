@@ -107,7 +107,48 @@ print(agency_share.to_string())
 
 direct = jobs[(jobs["is_staffing_agency"] == 0) & (jobs["company"] != "")]
 direct["company"].value_counts().head(15)"""),
-    md("## 7. Target employers\n\nPostings from the companies in `config/target_companies.yaml` (tier 1 = top choices, tier 2 = solid alternatives)."),
+    md("""## 7. Which skills are rising? (last 14 days vs the 14 days before)
+
+For job seekers this is the key question. The idea in plain pandas: split postings by publish date into two windows and compare each skill's share.
+
+> **Caveat:** on the first runs, the earlier window only contains postings that are *still open*, so it under-represents roles that filled quickly. Running the radar daily removes this bias over time."""),
+    code("""WINDOW_DAYS = 14
+
+dated = jobs.assign(posted=pd.to_datetime(jobs["posted_at"], utc=True, errors="coerce", format="mixed"))
+dated = dated.dropna(subset=["posted"])
+end = dated["posted"].max()
+dated["window"] = None
+dated.loc[dated["posted"] > end - pd.Timedelta(days=WINDOW_DAYS), "window"] = "recent"
+dated.loc[(dated["posted"] <= end - pd.Timedelta(days=WINDOW_DAYS))
+          & (dated["posted"] > end - pd.Timedelta(days=2 * WINDOW_DAYS)), "window"] = "prior"
+dated = dated.dropna(subset=["window"])
+
+n_window = dated["window"].value_counts()
+share = (skills.merge(dated[["job_id", "window"]], on="job_id")
+         .groupby(["skill", "window"])["job_id"].nunique().unstack(fill_value=0)
+         .div(n_window, axis=1).mul(100).round(1))
+share["change_pp"] = share.get("recent", 0) - share.get("prior", 0)
+print(f"Postings: {n_window.to_dict()}")
+share.sort_values("change_pp", ascending=False).head(15)"""),
+    md("The pipeline adds a statistical test to the same comparison (two-proportion z-test with a false-discovery-rate correction), so only changes that are unlikely to be noise are labelled **RISING** / **FALLING**; **WATCH** means promising but not yet conclusive."),
+    code("""EXPORTS = DB.parent / "exports"
+trends = pd.read_csv(EXPORTS / "skill_trends.csv")
+trends[trends["signal"] != "stable"] if "signal" in trends else trends"""),
+    md("### AI skills by industry\n\nHow often postings in each industry mention AI-related skills."),
+    code("""ind = skills.merge(jobs[["job_id", "industry"]], on="job_id")
+ai = ind[ind["skill_group"] == "ai"]
+industry_n = jobs["industry"].value_counts()
+ai_share = (ai.groupby(["industry", "skill"])["job_id"].nunique().unstack(fill_value=0)
+            .div(industry_n, axis=0).mul(100).round(1)
+            .dropna(how="all"))
+ai_share[industry_n.reindex(ai_share.index) >= 20] if not ai_share.empty else ai_share"""),
+    code("""by_industry_file = EXPORTS / "skill_trends_by_industry.csv"
+if by_industry_file.exists() and by_industry_file.stat().st_size > 1:
+    by_ind = pd.read_csv(by_industry_file)
+    display(by_ind[by_ind["signal"] != "stable"].sort_values(["industry", "change_pp"], ascending=[True, False]))
+else:
+    print("Not enough postings per industry yet.")"""),
+    md("## 8. Target employers\n\nPostings from the companies in `config/target_companies.yaml` (tier 1 = top choices, tier 2 = solid alternatives)."),
     code("""targets = jobs[jobs["target_tier"] > 0]
 print(f"{len(targets)} open roles at target employers "
       f"({(targets['target_tier'] == 1).sum()} tier 1, {(targets['target_tier'] == 2).sum()} tier 2)")
@@ -121,11 +162,11 @@ summary.head(25)"""),
     code("""# Tier 1 roles by role type: where your target employers are hiring
 pd.crosstab(targets["company"], targets["role_family"]).loc[
     targets.loc[targets["target_tier"] == 1, "company"].value_counts().index[:15]]"""),
-    md("## 8. Seniority mix\n\nHow many openings are entry level (`new_grad`) vs. mid or senior, per role type."),
+    md("## 9. Seniority mix\n\nHow many openings are entry level (`new_grad`) vs. mid or senior, per role type."),
     code("""seniority = pd.crosstab(jobs["role_family"], jobs["seniority"])
 seniority["new_grad_share_%"] = (100 * seniority.get("new_grad", 0) / seniority.sum(axis=1)).round(1)
 seniority.sort_values("new_grad_share_%", ascending=False)"""),
-    md("""## 9. Notes for interpretation
+    md("""## 10. Notes for interpretation
 
 - **Snippets undercount skills** (Adzuna); use rankings and the full-JD section for shares.
 - **Full-JD postings skew to tech and fintech**; large banks mostly use applicant systems with no public API.

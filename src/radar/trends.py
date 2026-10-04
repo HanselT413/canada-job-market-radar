@@ -2,16 +2,17 @@
 
 Method
 ------
-1. Bucket postings by the ISO week they were posted.
-2. For each skill, compute its share of new postings in a recent window
-   (last N weeks) and the window before it (previous N weeks).
+1. Take each posting's publish date.
+2. For each skill, compute its share of postings published in the recent window
+   (default: last 14 days) and in the window before it (the 14 days before that).
 3. Report the change in percentage points, the relative change, and a
    two-proportion z-test so small-sample noise is not flagged as a trend.
 4. Adjust for testing many skills at once (Benjamini-Hochberg, FDR 10%):
    RISING / FALLING = survives the correction; WATCH = p < 0.05 only.
 
-Because the radar re-runs every week, the history grows over time; the
-longer it runs, the more reliable these trends become.
+Caveat: on a first run, older postings are only those still open, so the earlier
+window under-represents roles that filled quickly. Running the radar daily removes
+that bias over time, because postings are stored when they first appear.
 """
 from __future__ import annotations
 
@@ -21,8 +22,8 @@ import sqlite3
 import pandas as pd
 
 
-def load_postings(conn: sqlite3.Connection) -> tuple[pd.DataFrame, pd.DataFrame]:
-    jobs = pd.read_sql("SELECT job_id, posted_at FROM jobs WHERE posted_at <> ''", conn)
+def load_postings(conn: sqlite3.Connection, where: str = "", params: tuple = ()) -> tuple[pd.DataFrame, pd.DataFrame]:
+    jobs = pd.read_sql(f"SELECT job_id, posted_at FROM jobs WHERE posted_at <> '' {where}", conn, params=params)
     skills = pd.read_sql("SELECT job_id, skill FROM job_skills", conn)
     jobs["posted_at"] = pd.to_datetime(jobs["posted_at"], utc=True, errors="coerce", format="mixed")
     jobs = jobs.dropna(subset=["posted_at"])
@@ -56,22 +57,26 @@ def _two_prop_z(x1: int, n1: int, x2: int, n2: int) -> float:
 
 def skill_trends(
     conn: sqlite3.Connection,
-    window_weeks: int = 4,
+    window_days: int = 14,
     min_mentions: int = 5,
     alpha: float = 0.05,
     fdr: float = 0.10,
+    industry: str | None = None,
 ) -> pd.DataFrame:
-    """Compare each skill's share in the latest window vs the window before it."""
-    jobs, skills = load_postings(conn)
+    """Compare each skill's share in the latest window vs the window before it.
+    Optionally restricted to one industry."""
+    where, params = ("AND industry = ?", (industry,)) if industry else ("", ())
+    jobs, skills = load_postings(conn, where, params)
     if jobs.empty:
         return pd.DataFrame()
 
-    weeks = sorted(jobs["week"].unique())
-    recent_weeks = set(weeks[-window_weeks:])
-    prior_weeks = set(weeks[-2 * window_weeks:-window_weeks])
-    jobs["window"] = jobs["week"].map(
-        lambda w: "recent" if w in recent_weeks else ("prior" if w in prior_weeks else None)
-    )
+    # Windows end at the newest posting date, so a late or missed run doesn't shift them
+    end = jobs["posted_at"].max()
+    recent_start = end - pd.Timedelta(days=window_days)
+    prior_start = end - pd.Timedelta(days=2 * window_days)
+    jobs["window"] = None
+    jobs.loc[jobs["posted_at"] > recent_start, "window"] = "recent"
+    jobs.loc[(jobs["posted_at"] > prior_start) & (jobs["posted_at"] <= recent_start), "window"] = "prior"
     jobs = jobs.dropna(subset=["window"])
     n = jobs.groupby("window").size()
     n_recent, n_prior = int(n.get("recent", 0)), int(n.get("prior", 0))
@@ -117,8 +122,8 @@ def skill_trends(
     cols = ["skill", "prior_share_pct", "recent_share_pct", "change_pp", "relative_change_pct",
             "p_value", "q_value", "signal", "recent_mentions", "prior_mentions"]
     out = out[cols]
-    out.attrs.update(n_recent=n_recent, n_prior=n_prior,
-                     recent_weeks=sorted(recent_weeks), prior_weeks=sorted(prior_weeks))
+    out.attrs.update(n_recent=n_recent, n_prior=n_prior, window_days=window_days,
+                     recent=(recent_start.date(), end.date()), prior=(prior_start.date(), recent_start.date()))
     return out.sort_values("change_pp", ascending=False).reset_index(drop=True)
 
 
@@ -133,3 +138,18 @@ def _bh_qvalues(pvals: list[float]) -> list[float]:
         running = min(running, pvals[i] * m / rank)
         q[i] = round(min(running, 1.0), 4)
     return q
+
+
+def skill_trends_by_industry(conn: sqlite3.Connection, min_postings: int = 40, **kwargs) -> pd.DataFrame:
+    """Run skill_trends separately for each industry with enough postings."""
+    counts = pd.read_sql(
+        "SELECT industry, COUNT(*) AS n FROM jobs WHERE posted_at <> '' GROUP BY industry", conn)
+    frames = []
+    for industry in counts.loc[counts["n"] >= min_postings, "industry"]:
+        t = skill_trends(conn, industry=industry, **kwargs)
+        if not t.empty:
+            frames.append(t.assign(industry=industry))
+    if not frames:
+        return pd.DataFrame()
+    out = pd.concat(frames, ignore_index=True)
+    return out[["industry"] + [c for c in out.columns if c != "industry"]]

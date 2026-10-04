@@ -57,6 +57,11 @@ ashby:
   - {org: float, company: Float Financial}
   - {org: docebo, company: Docebo}
 
+# Trend early-warning: compare skill shares in postings from the last N days
+# with the N days before that.
+trends:
+  window_days: 14
+
 # Workday career sites (large banks, insurers, retailers). Not a documented API, so the
 # fetcher checks robots.txt first, sends at most one request per second, and downloads
 # full details only for postings not already stored. Verified October 2026.

@@ -13,12 +13,12 @@ ANALYSIS_PATH = ROOT / "sql" / "analysis.sql"
 JOB_COLUMNS = [
     "job_id", "source", "title", "company", "location", "province", "description",
     "salary_min", "salary_max", "salary_is_predicted", "category", "contract_time",
-    "seniority", "role_family", "is_staffing_agency", "full_description", "target_tier", "posted_at", "url", "search_query", "dedupe_key",
+    "seniority", "role_family", "is_staffing_agency", "full_description", "target_tier", "industry", "posted_at", "url", "search_query", "dedupe_key",
 ]
 
 
 NEW_COLUMNS = {"is_staffing_agency": "INTEGER DEFAULT 0", "full_description": "INTEGER DEFAULT 0",
-               "target_tier": "INTEGER DEFAULT 0"}
+               "target_tier": "INTEGER DEFAULT 0", "industry": "TEXT DEFAULT 'Unclassified'"}
 
 
 def connect(db_path: Path | str) -> sqlite3.Connection:

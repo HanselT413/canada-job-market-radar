@@ -9,6 +9,7 @@ import yaml
 
 AGENCY_PATH = Path(__file__).resolve().parents[2] / "config" / "staffing_agencies.yaml"
 TARGETS_PATH = Path(__file__).resolve().parents[2] / "config" / "target_companies.yaml"
+INDUSTRIES_PATH = Path(__file__).resolve().parents[2] / "config" / "industries.yaml"
 
 TAG_RE = re.compile(r"<[^>]+>")
 SPACE_RE = re.compile(r"\s+")
@@ -103,6 +104,28 @@ def target_tier(company: str) -> int:
     return 0
 
 
+def _names_pattern(names: list[str]) -> re.Pattern:
+    alt = "|".join(re.escape(n.strip().lower()) for n in names if n.strip())
+    return re.compile(rf"(?<![a-z0-9])(?:{alt})(?![a-z0-9])")
+
+
+@lru_cache(maxsize=1)
+def _industry_rules(path: str = str(INDUSTRIES_PATH)) -> tuple:
+    if not Path(path).exists():
+        return ()
+    data = yaml.safe_load(Path(path).read_text()) or {}
+    return tuple((industry, _names_pattern(entry.split("|")))
+                 for industry, entries in data.items() for entry in entries or [])
+
+
+def tag_industry(company: str) -> str:
+    name = (company or "").lower()
+    for industry, pattern in _industry_rules():
+        if pattern.search(name):
+            return industry
+    return "Unclassified"
+
+
 def dedupe_key(job: dict) -> str:
     """Same title + company + city counts as one posting across sources."""
     parts = [job.get("title", ""), job.get("company", ""), (job.get("location") or "").split(",")[0]]
@@ -121,6 +144,7 @@ def clean_jobs(jobs: list[dict]) -> list[dict]:
         job["role_family"] = tag_role_family(job["title"])
         job["is_staffing_agency"] = is_staffing_agency(job.get("company", ""))
         job["target_tier"] = target_tier(job.get("company", ""))
+        job["industry"] = tag_industry(job.get("company", ""))
         # Adzuna returns a snippet; company boards return the full job description
         job["full_description"] = int(job.get("source") != "adzuna")
         key = dedupe_key(job)

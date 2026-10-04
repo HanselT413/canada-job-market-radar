@@ -20,7 +20,7 @@ from radar.db import (JOB_COLUMNS, ROOT, connect, known_job_ids, load_named_quer
                       upsert_jobs)
 from radar.premium import skill_premiums
 from radar.skills import SkillExtractor
-from radar.trends import skill_trends, weekly_skill_share
+from radar.trends import skill_trends, skill_trends_by_industry, weekly_skill_share
 
 DEFAULT_DB = ROOT / "data" / "radar.db"
 SAMPLE_PATH = ROOT / "data" / "sample" / "sample_jobs.json"
@@ -153,6 +153,8 @@ def run_fetch(db_path: Path, sample: bool) -> None:
 
 def run_export(db_path: Path, out_dir: Path = EXPORT_DIR) -> None:
     out_dir.mkdir(parents=True, exist_ok=True)
+    config = yaml.safe_load((ROOT / "config" / "search.yaml").read_text())
+    window_days = (config.get("trends") or {}).get("window_days", 14)
     with connect(db_path) as conn:
         for name, sql in load_named_queries().items():
             cur = conn.execute(sql)
@@ -168,10 +170,15 @@ def run_export(db_path: Path, out_dir: Path = EXPORT_DIR) -> None:
         weekly.to_csv(out_dir / "skill_share_by_week.csv", index=False)
         print(f"  skill_share_by_week.csv ({len(weekly)} rows)")
 
-        trends = skill_trends(conn)
+        trends = skill_trends(conn, window_days=window_days)
         trends.to_csv(out_dir / "skill_trends.csv", index=False)
         rising = trends[trends["signal"] == "RISING"]["skill"].tolist() if not trends.empty else []
-        print(f"  skill_trends.csv ({len(trends)} rows) | rising: {', '.join(rising) or 'none yet'}")
+        print(f"  skill_trends.csv ({len(trends)} rows, last {window_days} days vs the {window_days} before) "
+              f"| rising: {', '.join(rising) or 'none yet'}")
+
+        by_industry = skill_trends_by_industry(conn, window_days=window_days)
+        by_industry.to_csv(out_dir / "skill_trends_by_industry.csv", index=False)
+        print(f"  skill_trends_by_industry.csv ({len(by_industry)} rows)")
 
         premiums, summary = skill_premiums(conn)
         premiums.to_csv(out_dir / "skill_premiums.csv", index=False)

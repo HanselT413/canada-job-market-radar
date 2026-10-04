@@ -19,6 +19,7 @@ CREATE TABLE IF NOT EXISTS jobs (
     is_staffing_agency  INTEGER DEFAULT 0,      -- 1 = posted by a recruitment agency
     full_description    INTEGER DEFAULT 0,      -- 1 = full JD (company board), 0 = snippet (Adzuna)
     target_tier         INTEGER DEFAULT 0,      -- 1 / 2 = on config/target_companies.yaml, 0 = not
+    industry            TEXT DEFAULT 'Unclassified', -- from config/industries.yaml
     posted_at           TEXT,
     url                 TEXT,
     search_query        TEXT,

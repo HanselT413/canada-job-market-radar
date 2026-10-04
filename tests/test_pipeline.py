@@ -81,7 +81,8 @@ def test_end_to_end_sample(tmp_path):
 
     out = tmp_path / "exports"
     run_export(db, out)
-    expected = set(load_named_queries()) | {"skill_share_by_week", "skill_trends", "skill_premiums"}
+    expected = set(load_named_queries()) | {"skill_share_by_week", "skill_trends", "skill_premiums",
+                                            "skill_trends_by_industry"}
     assert {p.stem for p in out.glob("*.csv")} == expected
 
 
@@ -96,7 +97,8 @@ def test_analysis_recovers_planted_signals(tmp_path):
     run_fetch(db, sample=True)
     conn = sqlite3.connect(db)
 
-    trends = skill_trends(conn).set_index("skill")
+    # The sample spreads a slow rise over 12 weeks, so use 4-week windows to test the method
+    trends = skill_trends(conn, window_days=28).set_index("skill")
     assert trends.loc["dbt", "signal"] == "RISING"
     assert (trends["signal"] == "RISING").sum() == 1  # no false positives after FDR correction
 
@@ -345,3 +347,35 @@ def test_search_config_is_valid():
         assert b["host"].startswith(b["tenant"] + ".") and b["host"].endswith(".myworkdayjobs.com")
     keys = [(b["host"], b["site"]) for b in cfg["workday"]]
     assert len(keys) == len(set(keys))
+
+
+def test_industry_and_ai_tags():
+    from radar.clean import tag_industry
+    assert tag_industry("TD Bank") == "Banking"
+    assert tag_industry("Wealthsimple") == "Fintech & Payments"
+    assert tag_industry("Tim Hortons") == "Retail & Consumer Goods"
+    assert tag_industry("Unknown Co") == "Unclassified"
+    ex = SkillExtractor()
+    found = {s for _, s in ex.extract("Use generative AI, ChatGPT and AI agents; build RAG on a vector database")}
+    assert {"Generative AI / LLMs", "AI Tools (ChatGPT, Copilot)", "AI Agents / Automation",
+            "RAG / Vector Search", "AI (any mention)"} <= found
+    assert not ex.extract("A prompt response to client requests")  # 'prompt' alone is not prompt engineering
+
+
+def test_trend_windows_use_days(tmp_path):
+    """Recent = last N days, prior = the N days before; older postings are ignored."""
+    from radar.db import connect, upsert_jobs
+    db = tmp_path / "t.db"
+    base = {"source": "workday", "company": "X", "description": ""}
+    jobs, skills = [], {}
+    for i in range(40):
+        day = i % 40  # spread over 40 days before 2026-10-01
+        jid = f"j{i}"
+        jobs.append(dict(base, job_id=jid, title="Analyst", posted_at=f"2026-{9 if day < 30 else 8}-{(30 - day) if day < 30 else (61 - day):02d}T00:00:00Z"))
+        # dbt only in the last 14 days
+        skills[jid] = [("modern", "dbt")] if day < 14 else [("technical", "SQL")]
+    with connect(db) as conn:
+        upsert_jobs(conn, jobs, skills)
+        t = skill_trends(conn, window_days=14, min_mentions=1).set_index("skill")
+        assert t.attrs["n_recent"] == 14 and t.attrs["n_prior"] == 14
+        assert t.loc["dbt", "recent_share_pct"] == 100.0 and t.loc["dbt", "prior_share_pct"] == 0.0

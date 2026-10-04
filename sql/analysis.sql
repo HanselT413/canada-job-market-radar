@@ -27,6 +27,21 @@ WHERE j.full_description = 1
 GROUP BY s.skill_group, s.skill
 ORDER BY postings DESC;
 
+-- name: skill_by_industry
+-- Skill demand within each industry
+SELECT
+    j.industry,
+    s.skill_group,
+    s.skill,
+    COUNT(*) AS postings,
+    ROUND(100.0 * COUNT(*) / t.industry_total, 1) AS pct_within_industry
+FROM job_skills s
+JOIN jobs j ON j.job_id = s.job_id
+JOIN (SELECT industry, COUNT(*) AS industry_total FROM jobs GROUP BY industry) t
+  ON t.industry = j.industry
+GROUP BY j.industry, s.skill_group, s.skill
+ORDER BY j.industry, postings DESC;
+
 -- name: skill_by_role
 -- Skill demand within each role family
 SELECT

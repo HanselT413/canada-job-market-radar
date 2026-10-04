@@ -1,0 +1,165 @@
+# Industry of each employer, for comparing skills and trends across industries.
+# Names match the same way as target_companies.yaml (case-insensitive, whole words,
+# any listed name). Postings from employers not listed here get industry "Unclassified".
+
+Banking:
+  - TD Bank | td | toronto-dominion bank | toronto dominion bank | td securities
+  - RBC | royal bank of canada | rbc royal bank | rbc capital markets
+  - BMO | bank of montreal | bmo financial group
+  - CIBC | canadian imperial bank of commerce
+  - Scotiabank | bank of nova scotia
+  - National Bank | national bank of canada | banque nationale
+  - EQ Bank | equitable bank
+  - Tangerine
+  - Desjardins
+  - Meridian Credit Union
+  - Alterna Savings
+  - ICICI Bank Canada | icici bank
+  - BDC | business development bank of canada
+  - Bank of Canada
+
+Insurance:
+  - Manulife | manulife financial
+  - Sun Life | sun life financial
+  - Canada Life
+  - Intact | intact financial | intact insurance
+  - Definity | definity financial | economical insurance
+  - Aviva | aviva canada
+  - Co-operators | the co-operators
+  - Empire Life
+  - iA Financial Group | ia financial | industrial alliance
+  - Beneva
+  - Wawanesa
+  - Travelers | travelers canada
+  - HUB International
+  - Aon
+
+Asset & Pension Management:
+  - CPP Investments | cppib
+  - Ontario Teachers' Pension Plan | otpp | ontario teachers
+  - OMERS
+  - HOOPP | healthcare of ontario pension plan
+  - PSP Investments | psp
+  - Brookfield | brookfield asset management | brookfield properties
+  - Mackenzie Investments | mackenzie financial
+  - AGF | agf management | agf investments
+  - CI Financial | ci global asset management
+  - Fiera Capital
+  - Sprott
+  - Burgundy Asset Management
+  - TMX Group | tmx
+
+Fintech & Payments:
+  - Wealthsimple
+  - KOHO
+  - Neo Financial
+  - Borrowell
+  - Float Financial
+  - Shakepay
+  - Flinks
+  - Wave Financial | waveapps | wave hq
+  - Moneris
+  - Interac
+  - Nuvei
+  - goeasy
+
+Consulting & Professional Services:
+  - Deloitte
+  - PwC | pricewaterhousecoopers
+  - EY | ernst & young | ernst and young
+  - KPMG
+  - Accenture
+  - CGI
+  - Capgemini
+  - Grant Thornton
+  - MNP
+  - BDO | bdo canada
+  - RSM | rsm canada
+  - Protiviti
+  - McKinsey | mckinsey & company
+  - BCG | boston consulting group
+  - Bain | bain & company
+  - Oliver Wyman
+  - Kearney
+  - Thomson Reuters
+  - Colliers
+  - Apply Digital
+
+Technology:
+  - Apple
+  - Google | alphabet
+  - Microsoft
+  - Amazon | amazon canada | amazon web services | aws
+  - IBM | ibm canada
+  - Samsung | samsung electronics
+  - Shopify
+  - OpenText | open text
+  - Lightspeed | lightspeed commerce
+  - Kinaxis
+  - Descartes | descartes systems
+  - Docebo
+  - FreshBooks
+  - Dye & Durham
+  - Cohere
+  - 1Password
+  - Tenstorrent
+  - Instacart
+  - Faire
+  - Geotab
+  - Hootsuite
+  - Achievers
+  - Waabi
+  - Kepler Communications
+  - Fullscript
+
+Telecom & Media:
+  - Rogers | rogers communications
+  - TELUS
+  - Bell | bell canada | bce
+  - Cogeco
+
+Retail & Consumer Goods:
+  - Loblaw | loblaw companies
+  - Canadian Tire | canadian tire corporation
+  - Dollarama
+  - Metro | metro inc
+  - Sobeys | empire company
+  - Indigo | indigo books
+  - Sleep Country | sleep country canada
+  - Aritzia
+  - PepsiCo | pepsico canada
+  - Nestle | nestle canada | nestlé | nestlé canada
+  - Unilever
+  - Procter & Gamble | p&g | procter and gamble
+  - Restaurant Brands International | rbi | tim hortons | burger king
+  - Starbucks
+
+Energy, Utilities & Mining:
+  - Enbridge
+  - Hydro One
+  - Toronto Hydro
+  - OPG | ontario power generation
+  - Barrick Gold | barrick
+  - Agnico Eagle
+  - Kinross Gold | kinross
+  - Centerra Gold
+  - Lundin Mining
+  - IAMGOLD
+  - Cameco
+  - Nutrien
+
+Public Sector & Crown Corporations:
+  - EDC | export development canada
+  - CMHC | canada mortgage and housing corporation
+  - Canada Post
+  - NAV CANADA
+  - VIA Rail
+
+Real Estate:
+  - RioCan
+  - SmartCentres
+  - Oxford Properties
+
+Automotive & Industrial:
+  - Magna | magna international
+  - Toyota | toyota canada
