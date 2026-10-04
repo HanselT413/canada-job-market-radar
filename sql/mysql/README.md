@@ -7,7 +7,7 @@ The pipeline stores data in SQLite automatically. To query it in MySQL / MySQL W
 export PYTHONPATH=src
 python3 -m radar.pipeline export-tables
 ```
-This writes `data/exports/tables/jobs.csv` and `job_skills.csv`.
+This writes `data/exports/tables/jobs.csv`, `job_skills.csv` and `posting_rules.csv` (the Ontario 2026 posting-rules check). Run `python3 -m radar.pipeline export` first so `posting_rules` exists.
 
 **2. Allow local file loading** (one time):
 - In MySQL Workbench, run: `SET GLOBAL local_infile = 1;`

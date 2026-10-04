@@ -4,6 +4,7 @@
 CREATE DATABASE IF NOT EXISTS job_radar;
 USE job_radar;
 
+DROP TABLE IF EXISTS posting_rules;
 DROP TABLE IF EXISTS job_skills;
 DROP TABLE IF EXISTS jobs;
 
@@ -42,5 +43,26 @@ CREATE TABLE job_skills (
     skill       VARCHAR(100) NOT NULL,
     PRIMARY KEY (job_id, skill),
     INDEX idx_skill (skill),
+    FOREIGN KEY (job_id) REFERENCES jobs(job_id)
+);
+
+-- Ontario 2026 job-posting rules: one row per Ontario posting checked
+CREATE TABLE posting_rules (
+    job_id                       VARCHAR(100) PRIMARY KEY,
+    company                      VARCHAR(200),
+    industry                     VARCHAR(60),
+    role_family                  VARCHAR(50),
+    location                     VARCHAR(200),
+    target_tier                  TINYINT,
+    salary_range_found           TINYINT,      -- 1 = a pay range was detected
+    salary_min                   DOUBLE NULL,  -- annualized
+    salary_max                   DOUBLE NULL,
+    salary_period                VARCHAR(10),  -- annual | hourly (as written in the posting)
+    salary_range_width           DOUBLE NULL,
+    range_within_cap             TINYINT NULL, -- 1 = width <= $50,000; NULL = no range or pay > $200,000
+    ai_disclosure                VARCHAR(10),  -- uses_ai | no_ai | none
+    vacancy_statement            VARCHAR(15),  -- existing | not_existing | none
+    canadian_experience_required TINYINT,
+    INDEX idx_pr_industry (industry),
     FOREIGN KEY (job_id) REFERENCES jobs(job_id)
 );

@@ -20,5 +20,16 @@ LINES TERMINATED BY '\r\n'
 IGNORE 1 LINES
 (job_id, skill_group, skill);
 
+LOAD DATA LOCAL INFILE '/PATH/TO/canada-job-market-radar/data/exports/tables/posting_rules.csv'
+INTO TABLE posting_rules
+FIELDS TERMINATED BY ',' OPTIONALLY ENCLOSED BY '"'
+LINES TERMINATED BY '\r\n'
+IGNORE 1 LINES
+(job_id, company, industry, role_family, location, target_tier, salary_range_found, salary_min,
+ salary_max, salary_period, salary_range_width, range_within_cap, ai_disclosure, vacancy_statement,
+ canadian_experience_required);
+
 -- Sanity check
-SELECT (SELECT COUNT(*) FROM jobs) AS jobs, (SELECT COUNT(*) FROM job_skills) AS job_skills;
+SELECT (SELECT COUNT(*) FROM jobs) AS jobs,
+       (SELECT COUNT(*) FROM job_skills) AS job_skills,
+       (SELECT COUNT(*) FROM posting_rules) AS posting_rules;

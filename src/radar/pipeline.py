@@ -215,6 +215,13 @@ def _mysql_value(value):
     return value
 
 
+POSTING_RULES_COLUMNS = [
+    "job_id", "company", "industry", "role_family", "location", "target_tier",
+    "salary_range_found", "salary_min", "salary_max", "salary_period", "salary_range_width",
+    "range_within_cap", "ai_disclosure", "vacancy_statement", "canadian_experience_required",
+]
+
+
 def run_export_tables(db_path: Path, out_dir: Path = EXPORT_DIR / "tables") -> None:
     """Dump the raw jobs and job_skills tables as CSV for loading into MySQL."""
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -223,8 +230,13 @@ def run_export_tables(db_path: Path, out_dir: Path = EXPORT_DIR / "tables") -> N
         tables = {
             "jobs": JOB_COLUMNS + ["first_seen_at", "last_seen_at"],
             "job_skills": ["job_id", "skill_group", "skill"],
+            "posting_rules": POSTING_RULES_COLUMNS,
         }
+        existing = {r[0] for r in conn.execute("SELECT name FROM sqlite_master WHERE type='table'")}
         for table, columns in tables.items():
+            if table not in existing:
+                print(f"  {table}: not built yet (run export first)")
+                continue
             cur = conn.execute(f"SELECT {', '.join(columns)} FROM {table}")
             headers = [d[0] for d in cur.description]
             rows = cur.fetchall()
