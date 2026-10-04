@@ -11,6 +11,13 @@ adzuna:
     - business intelligence analyst
     - analytics new grad
     - risk analyst
+    # Client / sales / business insights
+    - insights analyst
+    - client insights analyst
+    - customer insights analyst
+    - business insights analyst
+    - sales analyst
+    - sales operations analyst
     # Product management
     - product manager
     - associate product manager
@@ -53,6 +60,8 @@ ats_title_filter:
   - business intelligence
   - scientist
   - risk
+  - sales operations
+  - revenue operations
   - product manager
   - product owner
   - product associate

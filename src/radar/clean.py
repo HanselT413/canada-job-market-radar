@@ -25,6 +25,10 @@ ROLE_FAMILY_RULES = [
     ("product_manager", r"product manag|product owner|product associate|associate product|\bapm\b"
                         r"|product lead|head of product|director,? (of )?product|product operations"),
     ("data_scientist", r"data scien|machine learning|\bml\b"),
+    ("sales_analyst", r"sales analy|sales operations|sales ops|revenue operations|\brevops\b"
+                      r"|commercial analy|pricing analy|sales strategy analy"),
+    ("insights_analyst", r"insights?\b|client analy|customer analy|consumer analy|marketing analy"
+                         r"|customer experience analy|\bcx analy|client experience analy"),
     ("bi_analyst", r"\bbi\b|business intelligence|reporting analy"),
     ("aml_compliance", r"\baml\b|anti[- ]money|\bkyc\b|financial crimes?|sanctions|fraud"
                        r"|transaction monitoring|compliance|\bcdd\b|\bedd\b"),

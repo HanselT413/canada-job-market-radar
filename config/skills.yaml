@@ -24,6 +24,16 @@ analytics_methods:
   Data Visualization: ["data visuali[sz]ation", "dashboard(s|ing)?"]
   ETL / Data Pipelines: ["etl", "elt", "data pipelines?"]
 
+commercial_insights:
+  Customer Segmentation: ["segmentation", "customer segments?", "personas?"]
+  Survey / Market Research: ["surveys?", "market research", "qualtrics", "focus groups?"]
+  Customer Experience (NPS/CSAT): ["\\bnps\\b", "net promoter", "csat", "customer satisfaction", "voice of (the )?customer"]
+  Churn / Customer Lifetime Value: ["churn", "customer lifetime value", "\\bclv\\b", "\\bltv\\b"]
+  Sales Pipeline Analysis: ["sales pipeline", "pipeline (management|analysis|health|reporting)", "win rates?", "conversion rates?"]
+  Quota / Territory Planning: ["quotas?", "territor(y|ies)", "sales compensation", "incentive comp(ensation)?"]
+  Pricing Analysis: ["pricing", "price elasticity"]
+  Marketing Analytics: ["marketing analytics", "campaign (analysis|performance|measurement)", "attribution"]
+
 product_management:
   Roadmapping: ["roadmaps?", "roadmapping"]
   User Research: ["user research", "customer (discovery|interviews?)", "usability test(ing)?"]

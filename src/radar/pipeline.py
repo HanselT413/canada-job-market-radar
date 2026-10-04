@@ -45,8 +45,12 @@ def collect_live(config: dict) -> list[dict]:
     jobs: list[dict] = []
     az = config.get("adzuna") or {}
     for query in az.get("queries", []):
-        raw = list(fetch_adzuna(query, az.get("where", "Toronto"), az.get("pages_per_query", 2),
-                                max_days_old=az.get("max_days_old", 30)))
+        try:
+            raw = list(fetch_adzuna(query, az.get("where", "Toronto"), az.get("pages_per_query", 2),
+                                    max_days_old=az.get("max_days_old", 30)))
+        except Exception as exc:  # e.g. 429 rate limit: keep going with the other queries
+            print(f"  adzuna '{query}': skipped ({exc})")
+            continue
         jobs += [normalize_adzuna(r, query) for r in raw]
         print(f"  adzuna '{query}': {len(raw)}")
 

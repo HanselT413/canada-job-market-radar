@@ -23,6 +23,10 @@ def test_tags():
     assert tag_role_family("AML Analyst") == "aml_compliance"
     assert tag_role_family("Credit Risk Analyst") == "risk_analyst"
     assert tag_role_family("Associate Product Manager") == "product_manager"
+    assert tag_role_family("Client Insights Analyst") == "insights_analyst"
+    assert tag_role_family("Business Insights Analyst") == "insights_analyst"
+    assert tag_role_family("Sales Operations Analyst") == "sales_analyst"
+    assert tag_role_family("Business Intelligence Analyst") == "bi_analyst"
     # "manager" in a product title is the role, not people management
     assert tag_seniority("Product Manager") == "mid"
     assert tag_seniority("Senior Product Manager") == "senior"
@@ -167,3 +171,15 @@ def test_pm_and_aml_skills():
     assert {"KYC / CDD", "Transaction Monitoring", "Sanctions Screening", "FINTRAC / PCMLTFA",
             "Suspicious Transaction Reporting", "CAMS Certification"} <= aml
     assert not ex.extract("We screen candidates carefully")  # no false positives
+
+
+def test_commercial_insight_skills():
+    ex = SkillExtractor()
+    found = {s for _, s in ex.extract(
+        "Build customer segmentation, analyze NPS surveys, churn and sales pipeline win rates, "
+        "support quota planning and pricing; measure campaign performance")}
+    assert {"Customer Segmentation", "Customer Experience (NPS/CSAT)", "Survey / Market Research",
+            "Churn / Customer Lifetime Value", "Sales Pipeline Analysis", "Quota / Territory Planning",
+            "Pricing Analysis", "Marketing Analytics"} <= found
+    # "data pipelines" must not count as a sales pipeline
+    assert "Sales Pipeline Analysis" not in {s for _, s in ex.extract("Build ETL data pipelines")}

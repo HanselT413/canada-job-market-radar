@@ -20,7 +20,7 @@ def fetch_adzuna(
     pages: int = 2,
     results_per_page: int = 50,
     max_days_old: int = 30,
-    pause: float = 1.0,
+    pause: float = 2.5,   # ~24 calls/minute, under the trial plan's per-minute limit
 ) -> Iterator[dict]:
     """Yield raw Adzuna job dicts for one search query."""
     app_id = os.environ.get("ADZUNA_APP_ID")
@@ -44,7 +44,7 @@ def fetch_adzuna(
         if not results:
             break
         yield from results
-        time.sleep(pause)  # stay well under rate limits
+        time.sleep(pause)
 
 
 def normalize_adzuna(raw: dict, query: str) -> dict:

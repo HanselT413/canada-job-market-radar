@@ -2,7 +2,7 @@
 
 A data pipeline and analytics project that tracks the Canadian job market for analytics roles, and the foundation for an AI-powered resume-to-job matching product.
 
-**Question it answers:** *What skills does the Toronto market actually ask for in analytics, product management and AML / financial-crime roles, which ones pay more, and who is hiring?*
+**Question it answers:** *What skills does the Toronto market actually ask for in analytics, insights, sales, product management and AML / financial-crime roles, which ones pay more, and who is hiring?*
 
 ## What it does (Phase 1)
 
@@ -29,6 +29,8 @@ Ashby ──────┘
 |---|---|
 | `data_analyst` / `bi_analyst` / `business_analyst` | Data Analyst, BI Analyst, Business Analyst |
 | `product_analyst` | Product Analyst |
+| `insights_analyst` | Client / Customer / Business / Marketing Insights Analyst |
+| `sales_analyst` | Sales Analyst, Sales / Revenue Operations Analyst, Pricing Analyst |
 | `product_manager` | Product Manager, Associate Product Manager, Product Owner, Product Associate |
 | `aml_compliance` | AML Analyst, KYC Analyst, Financial Crimes Analyst, Compliance Analyst |
 | `risk_analyst` | Credit / Market / Operational Risk Analyst |
