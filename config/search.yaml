@@ -11,7 +11,15 @@ adzuna:
     - business intelligence analyst
     - analytics new grad
     - risk analyst
+    # Product management
+    - product manager
+    - associate product manager
+    - product owner
+    # AML / financial crime
     - aml analyst
+    - kyc analyst
+    - financial crime analyst
+    - compliance analyst
 
 # Target companies on public ATS boards (official public APIs, full job descriptions).
 # The token is the slug in the company's careers URL. Verified October 2026;
@@ -45,6 +53,16 @@ ats_title_filter:
   - business intelligence
   - scientist
   - risk
+  - product manager
+  - product owner
+  - product associate
+  - associate product
+  - product operations
+  - aml
+  - kyc
+  - financial crime
+  - compliance
+  - fraud
 
 # Keep only postings whose location contains one of these (case-insensitive).
 # "Remote (Canada)" matches "canada"; plain US-remote roles are dropped.

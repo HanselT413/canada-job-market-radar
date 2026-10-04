@@ -49,6 +49,21 @@ def load_salary_frame(conn: sqlite3.Connection) -> tuple[pd.DataFrame, list[str]
     return df, list(skill_matrix.columns)
 
 
+def _drop_collinear(X: pd.DataFrame, protected: list[str]) -> tuple[pd.DataFrame, list[str]]:
+    """Keep a column only if it adds rank. Controls go first, so a skill that is fully
+    explained by the controls or by other skills (e.g. always co-occurs) is dropped."""
+    order = [c for c in protected if c in X] + [c for c in X if c not in protected]
+    kept: list[str] = []
+    rank = 0
+    for col in order:
+        trial = kept + [col]
+        r = np.linalg.matrix_rank(X[trial].to_numpy())
+        if r > rank:
+            kept, rank = trial, r
+    dropped = [c for c in X.columns if c not in kept]
+    return X[kept], dropped
+
+
 def skill_premiums(
     conn: sqlite3.Connection,
     min_with: int = 10,
@@ -68,6 +83,7 @@ def skill_premiums(
     X = pd.concat([df[usable].astype(float), controls], axis=1)
     X = X.loc[:, X.std() > 0]  # drop constant columns
     X = sm.add_constant(X)
+    X, dropped = _drop_collinear(X, protected=["const"] + list(controls.columns))
     y = np.log(df["salary_mid"])
     model = sm.OLS(y, X).fit(cov_type="HC3")
 
@@ -86,11 +102,17 @@ def skill_premiums(
             "significant": bool(model.pvalues[s] < 0.05),
             "postings_with_skill": int(df[s].sum()),
         })
-    table = pd.DataFrame(rows).sort_values("premium_pct", ascending=False).reset_index(drop=True)
+    table = pd.DataFrame(rows)
+    # Many skills are tested at once, so control the false discovery rate (Benjamini-Hochberg)
+    from radar.trends import _bh_qvalues
+    table["q_value"] = _bh_qvalues(table["p_value"].tolist())
+    table["significant"] = table["q_value"] < 0.05
+    table = table.sort_values("premium_pct", ascending=False).reset_index(drop=True)
     summary = {
         "n": int(model.nobs),
         "r_squared": round(float(model.rsquared), 3),
         "skills_tested": len(table),
         "controls": CONTROLS,
+        "dropped_collinear_skills": dropped,
     }
     return table, summary

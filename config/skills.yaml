@@ -24,6 +24,25 @@ analytics_methods:
   Data Visualization: ["data visuali[sz]ation", "dashboard(s|ing)?"]
   ETL / Data Pipelines: ["etl", "elt", "data pipelines?"]
 
+product_management:
+  Roadmapping: ["roadmaps?", "roadmapping"]
+  User Research: ["user research", "customer (discovery|interviews?)", "usability test(ing)?"]
+  Agile / Scrum: ["agile", "scrum", "sprints?", "kanban"]
+  Jira: ["jira", "confluence"]
+  Requirements / PRDs: ["prds?", "product requirements?", "user stories", "requirements gathering"]
+  Prioritization: ["prioriti[sz](e|ation|ing)", "trade-?offs"]
+  Go-to-Market: ["go-to-market", "\\bgtm\\b", "product launch(es)?"]
+  Figma: ["figma", "wireframes?", "prototyp(e|es|ing)"]
+
+aml_compliance:
+  Transaction Monitoring: ["transaction monitoring"]
+  Sanctions Screening: ["sanctions", "ofac", "name screening", "watch ?list screening"]
+  KYC / CDD: ["kyc", "know your (customer|client)", "customer due diligence", "\\bcdd\\b", "\\bedd\\b", "enhanced due diligence"]
+  FINTRAC / PCMLTFA: ["fintrac", "pcmltfa", "proceeds of crime"]
+  Suspicious Transaction Reporting: ["suspicious (transaction|activity) report(s|ing)?", "\\bstrs?\\b", "\\bsars?\\b"]
+  CAMS Certification: ["\\bcams\\b", "acams"]
+  Regulatory Compliance: ["regulatory", "osfi", "regulations?"]
+
 business_domain:
   Financial Services: ["bank(ing)?", "financial services", "wealth management", "capital markets"]
   Risk / AML: ["aml", "anti[- ]money laundering", "kyc", "fraud", "financial crime"]

@@ -2,7 +2,7 @@
 
 A data pipeline and analytics project that tracks the Canadian job market for analytics roles, and the foundation for an AI-powered resume-to-job matching product.
 
-**Question it answers:** *What skills does the Toronto analytics job market actually ask for, which ones pay more, and who is hiring?*
+**Question it answers:** *What skills does the Toronto market actually ask for in analytics, product management and AML / financial-crime roles, which ones pay more, and who is hiring?*
 
 ## What it does (Phase 1)
 
@@ -18,10 +18,23 @@ Ashby ──────┘
 | Collect | `src/radar/sources/` | Pulls postings from the Adzuna Canada API and public Greenhouse / Lever / Ashby company job boards |
 | Normalize | `normalize_*` functions | Maps each source to one common schema |
 | Clean | `src/radar/clean.py` | Strips HTML, tags seniority, role family and recruitment agencies, removes cross-source duplicates |
-| Extract skills | `src/radar/skills.py`, `config/skills.yaml` | Transparent dictionary matching (SQL, Python, A/B testing, AML, ...) |
+| Extract skills | `src/radar/skills.py`, `config/skills.yaml` | Transparent dictionary matching across technical, analytics, product-management and AML-compliance skills |
 | Store | `sql/schema.sql` | `jobs` and `job_skills` tables (one-to-many) |
 | Analyze | `sql/analysis.sql` | Skill demand (all / full-JD only), skills by role, salary by skill, top direct employers, agency share, seniority mix, weekly trend |
 | Export | `pipeline.py export` | One CSV per query, ready for Tableau |
+
+## Role families covered
+
+| Role family | Example titles |
+|---|---|
+| `data_analyst` / `bi_analyst` / `business_analyst` | Data Analyst, BI Analyst, Business Analyst |
+| `product_analyst` | Product Analyst |
+| `product_manager` | Product Manager, Associate Product Manager, Product Owner, Product Associate |
+| `aml_compliance` | AML Analyst, KYC Analyst, Financial Crimes Analyst, Compliance Analyst |
+| `risk_analyst` | Credit / Market / Operational Risk Analyst |
+| `data_scientist` | Data Scientist, ML roles |
+
+Add search terms in `config/search.yaml`; add role rules in `src/radar/clean.py`. `skill_by_role` compares what each family asks for.
 
 ## Two analyses that go beyond counting
 
@@ -41,11 +54,13 @@ log(salary_mid) = b0 + Σ b_k · has_skill_k + seniority + role_family + city + 
 premium_k = exp(b_k) − 1
 ```
 
-- OLS with robust (HC3) standard errors, 95% confidence intervals
+- OLS with robust (HC3) standard errors, 95% confidence intervals, Benjamini–Hochberg q-values
 - Only employer-posted salaries; skills need ≥10 postings with and without them
 - **Interpretation:** a controlled association, not a causal effect. Employers asking for a skill may differ in ways the model does not observe (company size, industry, team).
 
-**Validation:** the synthetic sample data plants a rising dbt trend and a +10% (dbt) / +6% (Python) premium. The tests check that the analysis recovers exactly these signals and flags nothing else.
+**Validation:** the synthetic sample data plants a rising dbt trend and a +10% (dbt) / +6% (Python) premium. The tests check that both are recovered, and that the trend analysis flags nothing else. Both analyses use Benjamini–Hochberg FDR control; skills that always co-occur with another skill or a control are dropped from the regression automatically.
+
+*An honest caveat the sample exposes:* A/B Testing also passes the premium threshold (+5.5%) although no premium was planted. It appears almost only in product-analyst postings, so the comparison group is small (26 postings) and chance differences look significant. On real data, treat premiums for skills concentrated in a single role with caution.
 
 ## Quick start
 

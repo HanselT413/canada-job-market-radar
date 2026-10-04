@@ -19,14 +19,23 @@ SENIORITY_RULES = [
     ("manager", r"\b(manager|director|head of|vp)\b"),
 ]
 
+# Order matters: the first matching rule wins.
 ROLE_FAMILY_RULES = [
     ("product_analyst", r"product analy"),
+    ("product_manager", r"product manag|product owner|product associate|associate product|\bapm\b"
+                        r"|product lead|head of product|director,? (of )?product|product operations"),
     ("data_scientist", r"data scien|machine learning|\bml\b"),
     ("bi_analyst", r"\bbi\b|business intelligence|reporting analy"),
-    ("risk_aml_analyst", r"\brisk\b|\baml\b|anti[- ]money|fraud|financial crime|compliance"),
+    ("aml_compliance", r"\baml\b|anti[- ]money|\bkyc\b|financial crimes?|sanctions|fraud"
+                       r"|transaction monitoring|compliance|\bcdd\b|\bedd\b"),
+    ("risk_analyst", r"\brisk\b"),
     ("business_analyst", r"business analy|business systems"),
     ("data_analyst", r"data analy|analytics|insights? analy"),
 ]
+
+# Titles where "manager" names the role, not people management
+IC_MANAGER_TITLES = re.compile(r"product manager|program manager|project manager|account manager"
+                               r"|relationship manager|case manager")
 
 
 def strip_html(text: str) -> str:
@@ -35,7 +44,7 @@ def strip_html(text: str) -> str:
 
 
 def tag_seniority(title: str) -> str:
-    t = (title or "").lower()
+    t = IC_MANAGER_TITLES.sub(" ", (title or "").lower())
     for label, pattern in SENIORITY_RULES:
         if re.search(pattern, t):
             return label

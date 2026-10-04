@@ -20,7 +20,14 @@ def test_tags():
     assert tag_seniority("Senior Product Analyst") == "senior"
     assert tag_seniority("Data Analyst") == "mid"
     assert tag_role_family("Product Analyst") == "product_analyst"
-    assert tag_role_family("AML Analyst") == "risk_aml_analyst"
+    assert tag_role_family("AML Analyst") == "aml_compliance"
+    assert tag_role_family("Credit Risk Analyst") == "risk_analyst"
+    assert tag_role_family("Associate Product Manager") == "product_manager"
+    # "manager" in a product title is the role, not people management
+    assert tag_seniority("Product Manager") == "mid"
+    assert tag_seniority("Senior Product Manager") == "senior"
+    assert tag_seniority("Associate Product Manager") == "new_grad"
+    assert tag_seniority("Director of Product") == "manager"
     assert tag_role_family("Business Intelligence Analyst") == "bi_analyst"
 
 
@@ -150,3 +157,13 @@ def test_old_database_is_upgraded(tmp_path):
     old.close()
     cols = {r[1] for r in connect(db).execute("PRAGMA table_info(jobs)")}
     assert {"is_staffing_agency", "full_description"} <= cols
+
+
+def test_pm_and_aml_skills():
+    ex = SkillExtractor()
+    pm = {s for _, s in ex.extract("Own the roadmap, write PRDs in Jira, run user research in agile sprints")}
+    assert {"Roadmapping", "Requirements / PRDs", "Jira", "User Research", "Agile / Scrum"} <= pm
+    aml = {s for _, s in ex.extract("KYC, transaction monitoring, sanctions, STR filing to FINTRAC; CAMS an asset")}
+    assert {"KYC / CDD", "Transaction Monitoring", "Sanctions Screening", "FINTRAC / PCMLTFA",
+            "Suspicious Transaction Reporting", "CAMS Certification"} <= aml
+    assert not ex.extract("We screen candidates carefully")  # no false positives
