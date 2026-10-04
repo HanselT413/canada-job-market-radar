@@ -2,6 +2,8 @@
 
 Docs: https://developer.adzuna.com/
 Note: Adzuna returns a shortened description (snippet), not the full JD.
+Default API limits: 25 calls/minute, 250/day, 1,000/week, 2,500/month
+(https://developer.adzuna.com/docs/terms_of_service).
 """
 from __future__ import annotations
 
@@ -55,6 +57,8 @@ def fetch_adzuna(
             break
         yield from results
         time.sleep(pause)
+        if len(results) < results_per_page:
+            break  # last page reached: skip a call that would return nothing
 
 
 def normalize_adzuna(raw: dict, query: str) -> dict:

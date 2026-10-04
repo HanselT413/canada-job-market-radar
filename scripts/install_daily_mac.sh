@@ -2,7 +2,11 @@
 # Set up (or remove) a daily automatic run on macOS using a LaunchAgent.
 #
 #   bash scripts/install_daily_mac.sh            # install: every day at 9:07 am
+#   bash scripts/install_daily_mac.sh 9 13 18    # install: daily at 9:07, 13:07 and 18:07
 #   bash scripts/install_daily_mac.sh uninstall  # remove
+#
+# Adzuna's free limit is 2,500 calls a month; one run uses about 20-25 calls,
+# so up to 3 runs a day fits. Keep manual runs to a minimum on top of that.
 #
 # If the Mac is asleep at that time, the run happens when it wakes up.
 # If it is shut down, that day's run is skipped.
@@ -50,6 +54,19 @@ echo "Using Python: $PYTHON"
   exit 1
 }
 
+HOURS="${*:-9}"
+INTERVALS=""
+for h in $HOURS; do
+  case "$h" in
+    ''|*[!0-9]*) echo "Hours must be numbers 0-23, e.g. 9 13 18" >&2; exit 1 ;;
+  esac
+  [ "$h" -le 23 ] || { echo "Hour out of range: $h" >&2; exit 1; }
+  INTERVALS="$INTERVALS    <dict><key>Hour</key><integer>$h</integer><key>Minute</key><integer>7</integer></dict>
+"
+done
+RUNS=$(echo $HOURS | wc -w | tr -d ' ')
+[ "$RUNS" -le 3 ] || { echo "More than 3 runs a day would exceed Adzuna's monthly limit." >&2; exit 1; }
+
 mkdir -p "$HOME/Library/LaunchAgents" "$REPO/data/logs"
 cat > "$PLIST" <<EOF
 <?xml version="1.0" encoding="UTF-8"?>
@@ -69,12 +86,8 @@ cat > "$PLIST" <<EOF
     <string>$PYTHON</string>
   </dict>
   <key>StartCalendarInterval</key>
-  <dict>
-    <key>Hour</key>
-    <integer>9</integer>
-    <key>Minute</key>
-    <integer>7</integer>
-  </dict>
+  <array>
+$INTERVALS  </array>
   <key>StandardErrorPath</key>
   <string>$REPO/data/logs/launchd_error.log</string>
 </dict>
@@ -86,7 +99,7 @@ launchctl bootout "$DOMAIN/$LABEL" 2>/dev/null || true
 launchctl bootstrap "$DOMAIN" "$PLIST"
 
 echo ""
-echo "Done. The radar will run every day at 9:07 am."
+echo "Done. The radar will run every day at minute 7 of hour(s): $HOURS"
 echo "Logs:            $REPO/data/logs/"
 echo "Test it now:     launchctl kickstart $DOMAIN/$LABEL"
 echo "Remove it:       bash scripts/install_daily_mac.sh uninstall"
