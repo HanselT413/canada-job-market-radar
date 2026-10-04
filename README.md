@@ -41,6 +41,15 @@ Workday ────┘
 
 Add search terms in `config/search.yaml`; add role rules in `src/radar/clean.py`. `skill_by_role` compares what each family asks for.
 
+## Featured topic: Ontario's 2026 job-posting rules
+
+Since **January 1, 2026**, Ontario employers with more than 25 employees must, in publicly advertised postings: state the expected pay or a pay range (no wider than **$50,000**; not required above $200,000), say whether the posting is for an **existing vacancy**, disclose if **AI** is used to screen applicants, and not require **"Canadian experience"**.
+
+`src/radar/ontario_rules.py` checks every Ontario posting with a full job description published since that date and reports, by industry and employer, how often each element is present (`ontario_rules_*.csv`, notebook section 8).
+
+- **A separate module:** it only reads the `jobs` table and writes its own `posting_rules` table; the rest of the radar does not depend on it.
+- **"Detected", not "compliant":** detection is automated text matching. Results describe what the text shows, never a legal conclusion about an employer. Employer size is not known (the tracked employers are large), and roles listed only as "Remote – Canada" are not counted as Ontario.
+
 ## Two analyses that go beyond counting
 
 ### 1. Skill trend early-warning (`src/radar/trends.py`)

@@ -151,6 +151,22 @@ def run_fetch(db_path: Path, sample: bool) -> None:
     print(f"Saved {n} postings after cleaning; database now holds {total}")
 
 
+def _export_ontario_rules(conn, out_dir: Path) -> None:
+    """Optional module: a failure here never stops the core exports."""
+    try:
+        from radar.ontario_rules import build_posting_rules, summarize
+        result = build_posting_rules(conn)
+        if result.empty:
+            print("  ontario_rules: no in-scope postings yet (full JD, Ontario, posted 2026 or later)")
+            return
+        summarize(result).to_csv(out_dir / "ontario_rules_summary.csv", index=False)
+        summarize(result, "industry").to_csv(out_dir / "ontario_rules_by_industry.csv", index=False)
+        summarize(result, "company").to_csv(out_dir / "ontario_rules_by_company.csv", index=False)
+        print(f"  ontario_rules_*.csv ({len(result)} Ontario postings checked)")
+    except Exception as exc:
+        print(f"  ontario_rules: skipped ({exc})")
+
+
 def run_export(db_path: Path, out_dir: Path = EXPORT_DIR) -> None:
     out_dir.mkdir(parents=True, exist_ok=True)
     config = yaml.safe_load((ROOT / "config" / "search.yaml").read_text())
@@ -179,6 +195,8 @@ def run_export(db_path: Path, out_dir: Path = EXPORT_DIR) -> None:
         by_industry = skill_trends_by_industry(conn, window_days=window_days)
         by_industry.to_csv(out_dir / "skill_trends_by_industry.csv", index=False)
         print(f"  skill_trends_by_industry.csv ({len(by_industry)} rows)")
+
+        _export_ontario_rules(conn, out_dir)
 
         premiums, summary = skill_premiums(conn)
         premiums.to_csv(out_dir / "skill_premiums.csv", index=False)

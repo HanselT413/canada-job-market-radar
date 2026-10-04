@@ -82,7 +82,8 @@ def test_end_to_end_sample(tmp_path):
     out = tmp_path / "exports"
     run_export(db, out)
     expected = set(load_named_queries()) | {"skill_share_by_week", "skill_trends", "skill_premiums",
-                                            "skill_trends_by_industry"}
+                                            "skill_trends_by_industry", "ontario_rules_summary",
+                                            "ontario_rules_by_industry", "ontario_rules_by_company"}
     assert {p.stem for p in out.glob("*.csv")} == expected
 
 
@@ -379,3 +380,45 @@ def test_trend_windows_use_days(tmp_path):
         t = skill_trends(conn, window_days=14, min_mentions=1).set_index("skill")
         assert t.attrs["n_recent"] == 14 and t.attrs["n_prior"] == 14
         assert t.loc["dbt", "recent_share_pct"] == 100.0 and t.loc["dbt", "prior_share_pct"] == 0.0
+
+
+def test_ontario_rules_detection():
+    from radar.ontario_rules import check_posting, is_ontario
+    r = check_posting("Pay Details: $64,000 - $88,000 CAD. This posting is for an existing vacancy. "
+                      "We use artificial intelligence (AI) to screen and assess applications.")
+    assert (r["salary_min"], r["salary_max"], r["range_within_cap"]) == (64000, 88000, 1)
+    assert r["ai_disclosure"] == "uses_ai" and r["vacancy_statement"] == "existing"
+    wide = check_posting("The base salary range is $85K–$140K.")
+    assert wide["salary_range_width"] == 55000 and wide["range_within_cap"] == 0
+    assert check_posting("Pay: $25.00 to $31.50 per hour.")["salary_period"] == "hourly"
+    assert check_posting("Salary: $210,000 - $290,000")["range_within_cap"] is None   # above exemption
+    assert check_posting("We do not use AI to screen applicants.")["ai_disclosure"] == "no_ai"
+    assert check_posting("A team of 2,000 - 3,000 people.")["salary_range_found"] == 0  # not pay
+    assert check_posting("Canadian experience required.")["canadian_experience_required"] == 1
+    assert check_posting("No Canadian experience required.")["canadian_experience_required"] == 0
+    assert check_posting("Join our talent pool for future opportunities.")["vacancy_statement"] == "not_existing"
+    assert is_ontario("London, ON") and is_ontario("Canada - Remote (ON, AB)")
+    assert not is_ontario("Remote, on call") and not is_ontario("Vancouver, BC")
+
+
+def test_ontario_rules_end_to_end(tmp_path):
+    from radar.db import connect, upsert_jobs
+    from radar.ontario_rules import build_posting_rules, summarize
+    base = {"source": "workday", "company": "TD Bank", "industry": "Banking", "full_description": 1,
+            "title": "Data Analyst", "role_family": "data_analyst"}
+    jobs = [
+        dict(base, job_id="a", location="Toronto, Ontario", posted_at="2026-09-01",
+             description="Pay: $70,000 - $90,000. This is an existing vacancy."),
+        dict(base, job_id="b", location="Toronto, Ontario", posted_at="2026-09-02", description="Great team."),
+        dict(base, job_id="c", location="Vancouver, BC", posted_at="2026-09-02", description="Pay: $1 - $2"),
+        dict(base, job_id="d", location="Toronto, Ontario", posted_at="2025-12-01", description="old"),
+        dict(base, job_id="e", source="adzuna", full_description=0, location="Toronto, Ontario",
+             posted_at="2026-09-02", description="snippet"),
+    ]
+    with connect(tmp_path / "t.db") as conn:
+        upsert_jobs(conn, jobs, {})
+        result = build_posting_rules(conn)
+        assert sorted(result["job_id"]) == ["a", "b"]   # Ontario, full JD, posted 2026+
+        overall = summarize(result).iloc[0]
+        assert overall["postings"] == 2 and overall["pct_salary_range"] == 50.0
+        assert overall["pct_vacancy_statement"] == 50.0
