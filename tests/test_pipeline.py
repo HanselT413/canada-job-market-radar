@@ -1,4 +1,6 @@
 import json
+
+import yaml
 import sqlite3
 
 from radar.clean import clean_jobs, strip_html, tag_role_family, tag_seniority
@@ -219,3 +221,108 @@ def test_adzuna_title_only_request(monkeypatch):
     reject_title_only = True
     list(adzuna.fetch_adzuna("sales analyst", pages=1))
     assert calls[-1]["what"] == "sales analyst" and "title_only" not in calls[-1]
+
+
+class _FakeWorkday:
+    """Minimal stand-in for a Workday site: robots.txt, search and detail endpoints."""
+
+    def __init__(self, robots="User-agent: *\nAllow: /Careers/\n", robots_status=200):
+        self.robots, self.robots_status = robots, robots_status
+        self.calls = []
+        self.postings = [
+            {"title": "Data Analyst", "externalPath": "/job/Toronto-Ontario/Data-Analyst_R_1", "locationsText": "Toronto, Ontario"},
+            {"title": "Software Engineer", "externalPath": "/job/Toronto-Ontario/SWE_R_2", "locationsText": "Toronto, Ontario"},
+            {"title": "AML Analyst", "externalPath": "/job/Delaware/AML_R_3", "locationsText": "Wilmington, Delaware"},
+            {"title": "Product Manager", "externalPath": "/job/x/PM_R_4", "locationsText": "2 Locations"},
+            {"title": "Insights Analyst", "externalPath": "/job/Toronto-Ontario/Insights_R_5", "locationsText": "Toronto, Ontario"},
+        ]
+
+    class R:
+        def __init__(self, status, data=None, text=""):
+            self.status_code, self._data, self.text = status, data, text
+        def json(self):
+            return self._data
+        def raise_for_status(self):
+            if self.status_code >= 400:
+                raise RuntimeError(self.status_code)
+
+    def get(self, url, headers=None, timeout=None):
+        self.calls.append(("GET", url))
+        if url.endswith("/robots.txt"):
+            return self.R(self.robots_status, text=self.robots)
+        path = url.split("/Careers", 1)[1]
+        title = next(p["title"] for p in self.postings if p["externalPath"] == path)
+        return self.R(200, {"jobPostingInfo": {"title": title, "location": "Toronto, ON",
+                                               "jobDescription": "<p>SQL and KYC</p>",
+                                               "startDate": "2026-10-01", "externalUrl": "https://x"}})
+
+    def post(self, url, json=None, headers=None, timeout=None):
+        self.calls.append(("POST", url))
+        return self.R(200, {"jobPostings": self.postings[json["offset"]:json["offset"] + 20]})
+
+
+def _run_fake(fake, known=frozenset()):
+    from radar.sources.workday import fetch_workday
+    return fetch_workday("acme.wd3.myworkdayjobs.com", "acme", "Careers", "Acme",
+                         search_terms=["analyst"], title_keywords=["analyst", "product manager"],
+                         known_ids=set(known), location_keywords=["toronto", "ontario"],
+                         session=fake, sleep=lambda s: None)
+
+
+def test_workday_filters_and_normalizes():
+    fake = _FakeWorkday()
+    res = _run_fake(fake)
+    titles = sorted(j["title"] for j in res.new_jobs)
+    # SWE dropped by title, Delaware dropped by location, "2 Locations" kept for the full posting to decide
+    assert titles == ["Data Analyst", "Insights Analyst", "Product Manager"]
+    job = res.new_jobs[0]
+    assert job["source"] == "workday" and job["job_id"].startswith("workday_acme_")
+    assert clean_jobs([job])[0]["full_description"] == 1
+
+
+def test_workday_skips_known_postings():
+    fake = _FakeWorkday()
+    res = _run_fake(fake, known={"workday_acme_Data-Analyst_R_1"})
+    assert "workday_acme_Data-Analyst_R_1" in res.seen_known_ids
+    detail_calls = [u for m, u in fake.calls if m == "GET" and "robots" not in u]
+    assert not any("Data-Analyst_R_1" in u for u in detail_calls)  # not downloaded again
+
+
+def test_workday_respects_robots():
+    disallowed = _FakeWorkday(robots="User-agent: *\nDisallow: /Careers/\n")
+    res = _run_fake(disallowed)
+    assert res.skipped_reason and not res.new_jobs
+    assert [m for m, _ in disallowed.calls] == ["GET"]  # only robots.txt was requested
+
+    unavailable = _FakeWorkday(robots_status=503)
+    assert _run_fake(unavailable).skipped_reason  # cannot check robots.txt -> skip
+
+
+def test_full_description_preferred_over_snippet():
+    snippet = {"job_id": "adzuna_1", "source": "adzuna", "title": "Data Analyst", "company": "TD Bank",
+               "location": "Toronto, Ontario", "description": "short"}
+    full = dict(snippet, job_id="workday_td_1", source="workday", description="full JD with SQL")
+    kept = clean_jobs([snippet, full])
+    assert [j["job_id"] for j in kept] == ["workday_td_1"]
+
+
+def test_add_workday_helper(tmp_path):
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("add_workday", "scripts/add_workday.py")
+    mod = importlib.util.module_from_spec(spec); spec.loader.exec_module(mod)
+
+    assert mod.parse_workday_url("https://cibc.wd3.myworkdayjobs.com/search") == \
+        {"host": "cibc.wd3.myworkdayjobs.com", "tenant": "cibc", "site": "search"}
+    assert mod.parse_workday_url(
+        "https://bmo.wd3.myworkdayjobs.com/en-US/External/job/Toronto/Analyst_R1")["site"] == "External"
+    import pytest
+    with pytest.raises(ValueError):
+        mod.parse_workday_url("https://jobs.example.com/careers")
+
+    cfg = tmp_path / "search.yaml"
+    cfg.write_text("workday:\n  - {host: a.wd3.myworkdayjobs.com, tenant: a, site: S, company: A}\nworkday_settings:\n  max_pages_per_term: 3\n")
+    entry = mod.parse_workday_url("https://acme.wd5.myworkdayjobs.com/Careers")
+    assert mod.add_to_config(entry, "Acme", cfg) == "added"
+    assert mod.add_to_config(entry, "Acme", cfg) == "already in the list"
+    data = yaml.safe_load(cfg.read_text())
+    assert data["workday"][-1] == {"host": "acme.wd5.myworkdayjobs.com", "tenant": "acme", "site": "Careers", "company": "Acme"}

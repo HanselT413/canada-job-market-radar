@@ -56,3 +56,15 @@ def load_named_queries(path: Path = ANALYSIS_PATH) -> dict[str, str]:
     text = path.read_text()
     parts = re.split(r"^-- name:\s*(\w+)\s*$", text, flags=re.MULTILINE)
     return {parts[i]: parts[i + 1].strip() for i in range(1, len(parts), 2)}
+
+
+def known_job_ids(conn: sqlite3.Connection, prefix: str = "") -> set[str]:
+    rows = conn.execute("SELECT job_id FROM jobs WHERE job_id LIKE ?", (prefix + "%",))
+    return {r[0] for r in rows}
+
+
+def touch_seen(conn: sqlite3.Connection, job_ids: set[str]) -> None:
+    """Mark postings that are still listed without downloading them again."""
+    now = datetime.now(timezone.utc).isoformat(timespec="seconds")
+    conn.executemany("UPDATE jobs SET last_seen_at = ? WHERE job_id = ?", [(now, j) for j in job_ids])
+    conn.commit()

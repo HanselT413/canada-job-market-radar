@@ -16,7 +16,8 @@ from pathlib import Path
 import yaml
 
 from radar.clean import clean_jobs
-from radar.db import JOB_COLUMNS, ROOT, connect, load_named_queries, upsert_jobs
+from radar.db import (JOB_COLUMNS, ROOT, connect, known_job_ids, load_named_queries, touch_seen,
+                      upsert_jobs)
 from radar.premium import skill_premiums
 from radar.skills import SkillExtractor
 from radar.trends import skill_trends, weekly_skill_share
@@ -37,7 +38,8 @@ def load_env(path: Path = ROOT / ".env") -> None:
             os.environ.setdefault(key.strip(), value.strip().strip('"'))
 
 
-def collect_live(config: dict) -> list[dict]:
+def collect_live(config: dict, known_ids: set[str] | None = None) -> tuple[list[dict], set[str]]:
+    """Return (postings, ids of already-stored postings that are still listed)."""
     from radar.sources.adzuna import fetch_adzuna, normalize_adzuna
     from radar.sources.ats import (fetch_ashby, fetch_greenhouse, fetch_lever, normalize_ashby,
                                   normalize_greenhouse, normalize_lever)
@@ -78,7 +80,31 @@ def collect_live(config: dict) -> list[dict]:
             print(f"  ashby {board['company']}: {len(raw)}")
         except Exception as exc:
             print(f"  ashby {board['company']}: skipped ({exc})")
-    return jobs
+
+    still_listed: set[str] = set()
+    wd = config.get("workday_settings") or {}
+    for board in config.get("workday") or []:
+        try:
+            from radar.sources.workday import fetch_workday
+            res = fetch_workday(
+                board["host"], board["tenant"], board["site"], board["company"],
+                search_terms=wd.get("search_terms", ["analyst"]),
+                title_keywords=config.get("ats_title_filter") or [],
+                known_ids=known_ids or set(),
+                location_keywords=config.get("location_filter") or [],
+                max_pages_per_term=wd.get("max_pages_per_term", 3),
+                max_new_details=wd.get("max_new_details", 80),
+            )
+            if res.skipped_reason:
+                print(f"  workday {board['company']}: skipped ({res.skipped_reason})")
+                continue
+            jobs += res.new_jobs
+            still_listed |= res.seen_known_ids
+            print(f"  workday {board['company']}: {len(res.new_jobs)} new, "
+                  f"{len(res.seen_known_ids)} already stored")
+        except Exception as exc:
+            print(f"  workday {board['company']}: skipped ({exc})")
+    return jobs, still_listed
 
 
 def filter_location(jobs: list[dict], keywords: list[str]) -> list[dict]:
@@ -99,13 +125,17 @@ def filter_ats_titles(jobs: list[dict], keywords: list[str]) -> list[dict]:
 
 def run_fetch(db_path: Path, sample: bool) -> None:
     config = yaml.safe_load((ROOT / "config" / "search.yaml").read_text())
+    still_listed: set[str] = set()
     if sample:
         jobs = json.loads(SAMPLE_PATH.read_text())
         print(f"Loaded {len(jobs)} sample postings")
     else:
         load_env()
         print("Fetching live postings...")
-        jobs = collect_live(config)
+        db_path.parent.mkdir(parents=True, exist_ok=True)
+        with connect(db_path) as conn:
+            known = known_job_ids(conn, "workday_")
+        jobs, still_listed = collect_live(config, known)
 
     jobs = filter_ats_titles(jobs, config.get("ats_title_filter") or [])
     jobs = filter_location(jobs, config.get("location_filter") or [])
@@ -116,6 +146,7 @@ def run_fetch(db_path: Path, sample: bool) -> None:
     db_path.parent.mkdir(parents=True, exist_ok=True)
     with connect(db_path) as conn:
         n = upsert_jobs(conn, jobs, skills)
+        touch_seen(conn, still_listed)
         total = conn.execute("SELECT COUNT(*) FROM jobs").fetchone()[0]
     print(f"Saved {n} postings after cleaning; database now holds {total}")
 

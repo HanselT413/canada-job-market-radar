@@ -3,7 +3,7 @@
 
 CREATE TABLE IF NOT EXISTS jobs (
     job_id              TEXT PRIMARY KEY,
-    source              TEXT NOT NULL,          -- adzuna | greenhouse | lever | ashby
+    source              TEXT NOT NULL,          -- adzuna | greenhouse | lever | ashby | workday
     title               TEXT NOT NULL,
     company             TEXT,
     location            TEXT,

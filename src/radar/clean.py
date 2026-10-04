@@ -88,7 +88,8 @@ def dedupe_key(job: dict) -> str:
 def clean_jobs(jobs: list[dict]) -> list[dict]:
     seen: set[str] = set()
     out = []
-    for job in jobs:
+    # Company boards first, so a full job description wins over an Adzuna snippet
+    for job in sorted(jobs, key=lambda j: j.get("source") == "adzuna"):
         job = dict(job)
         job["description"] = strip_html(job.get("description", ""))
         job["title"] = SPACE_RE.sub(" ", job.get("title", "")).strip()

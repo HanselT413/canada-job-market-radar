@@ -51,6 +51,27 @@ ashby:
   - {org: 1password, company: 1Password}
   - {org: koho, company: KOHO}
 
+# Workday career sites (large banks, insurers, retailers). Not a documented API, so the
+# fetcher checks robots.txt first, sends at most one request per second, and downloads
+# full details only for postings not already stored. Verified October 2026.
+workday:
+  - {host: td.wd3.myworkdayjobs.com, tenant: td, site: TD_Bank_Careers, company: TD Bank}
+  - {host: bmo.wd3.myworkdayjobs.com, tenant: bmo, site: External, company: BMO}
+  - {host: cibc.wd3.myworkdayjobs.com, tenant: cibc, site: search, company: CIBC}
+  - {host: rbc.wd3.myworkdayjobs.com, tenant: rbc, site: RBCEARLYTALENT1, company: RBC}
+  - {host: manulife.wd3.myworkdayjobs.com, tenant: manulife, site: MFCJH_Jobs, company: Manulife}
+  - {host: sunlife.wd3.myworkdayjobs.com, tenant: sunlife, site: Experienced-Jobs, company: Sun Life}
+  - {host: desjardins.wd10.myworkdayjobs.com, tenant: desjardins, site: Desjardins, company: Desjardins}
+  - {host: canadiantirecorporation.wd3.myworkdayjobs.com, tenant: canadiantirecorporation, site: Enterprise_External_Careers_Site, company: Canadian Tire}
+  - {host: myview.wd3.myworkdayjobs.com, tenant: myview, site: loblaw_careers, company: Loblaw}
+  - {host: interac.wd3.myworkdayjobs.com, tenant: interac, site: Interac, company: Interac}
+  - {host: otppb.wd3.myworkdayjobs.com, tenant: otppb, site: OntarioTeachers_Careers, company: Ontario Teachers' Pension Plan}
+  - {host: cppib.wd10.myworkdayjobs.com, tenant: cppib, site: cppinvestments, company: CPP Investments}
+workday_settings:
+  search_terms: [analyst, product manager, product owner, compliance, insights]
+  max_pages_per_term: 3       # 20 postings per page
+  max_new_details: 80         # per company per run; the rest are picked up next run
+
 # Company boards list every role, so keep only titles containing one of these.
 # (Adzuna results are already scoped by the search queries above.)
 ats_title_filter:
