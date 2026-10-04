@@ -69,3 +69,24 @@ def touch_seen(conn: sqlite3.Connection, job_ids: set[str]) -> None:
     now = datetime.now(timezone.utc).isoformat(timespec="seconds")
     conn.executemany("UPDATE jobs SET last_seen_at = ? WHERE job_id = ?", [(now, j) for j in job_ids])
     conn.commit()
+
+
+def retag_all(conn: sqlite3.Connection, extractor) -> int:
+    """Re-apply the current tagging rules and skill dictionary to every stored posting,
+    so edits to config files (skills, target companies, industries) reach old rows too."""
+    from radar.clean import is_staffing_agency, tag_industry, tag_role_family, tag_seniority, target_tier
+
+    rows = conn.execute("SELECT job_id, title, company, description FROM jobs").fetchall()
+    conn.executemany(
+        "UPDATE jobs SET seniority = ?, role_family = ?, is_staffing_agency = ?, target_tier = ?, "
+        "industry = ? WHERE job_id = ?",
+        [(tag_seniority(t), tag_role_family(t), is_staffing_agency(c), target_tier(c), tag_industry(c), j)
+         for j, t, c, _ in rows],
+    )
+    conn.execute("DELETE FROM job_skills")
+    conn.executemany(
+        "INSERT INTO job_skills (job_id, skill_group, skill) VALUES (?, ?, ?)",
+        [(j, g, sk) for j, t, _, d in rows for g, sk in extractor.extract(f"{t} {d or ''}")],
+    )
+    conn.commit()
+    return len(rows)

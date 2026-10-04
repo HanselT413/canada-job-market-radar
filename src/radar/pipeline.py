@@ -16,8 +16,8 @@ from pathlib import Path
 import yaml
 
 from radar.clean import clean_jobs
-from radar.db import (JOB_COLUMNS, ROOT, connect, known_job_ids, load_named_queries, touch_seen,
-                      upsert_jobs)
+from radar.db import (JOB_COLUMNS, ROOT, connect, known_job_ids, load_named_queries, retag_all,
+                      touch_seen, upsert_jobs)
 from radar.premium import skill_premiums
 from radar.skills import SkillExtractor
 from radar.trends import skill_trends, skill_trends_by_industry, weekly_skill_share
@@ -147,6 +147,7 @@ def run_fetch(db_path: Path, sample: bool) -> None:
     with connect(db_path) as conn:
         n = upsert_jobs(conn, jobs, skills)
         touch_seen(conn, still_listed)
+        retag_all(conn, extractor)  # apply current rules to older postings too
         total = conn.execute("SELECT COUNT(*) FROM jobs").fetchone()[0]
     print(f"Saved {n} postings after cleaning; database now holds {total}")
 

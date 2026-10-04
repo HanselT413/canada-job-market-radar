@@ -422,3 +422,18 @@ def test_ontario_rules_end_to_end(tmp_path):
         overall = summarize(result).iloc[0]
         assert overall["postings"] == 2 and overall["pct_salary_range"] == 50.0
         assert overall["pct_vacancy_statement"] == 50.0
+
+
+def test_retag_updates_old_rows(tmp_path):
+    """Rows stored before a rule existed pick up new tags and skills on the next run."""
+    from radar.db import connect, retag_all, upsert_jobs
+    old = {"job_id": "old1", "source": "lever", "title": "Product Manager", "company": "Wealthsimple",
+           "location": "Toronto", "description": "Experience with generative AI and dbt",
+           "role_family": "other", "industry": "Unclassified", "target_tier": 0}
+    with connect(tmp_path / "t.db") as conn:
+        upsert_jobs(conn, [old], {"old1": []})
+        retag_all(conn, SkillExtractor())
+        row = conn.execute("SELECT role_family, industry, target_tier FROM jobs").fetchone()
+        assert row == ("product_manager", "Fintech & Payments", 1)
+        skills = {r[0] for r in conn.execute("SELECT skill FROM job_skills")}
+        assert {"Generative AI / LLMs", "dbt"} <= skills
