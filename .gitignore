@@ -6,3 +6,4 @@ data/radar.db
 data/exports/
 .DS_Store
 data/logs/
+data/validation/
