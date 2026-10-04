@@ -83,6 +83,8 @@ python -m radar.pipeline export
 pytest
 ```
 
+**Run it automatically (macOS):** `bash scripts/install_daily_mac.sh` schedules a daily run at 9:07 am (logs in `data/logs/`). Keep the project outside Downloads / Desktop / Documents, which macOS blocks for background jobs.
+
 **Prefer pandas?** `notebooks/market_analysis.ipynb` reproduces the main analysis with plain pandas (`groupby`, `merge`, `pivot_table`, `crosstab`) and charts, reading the same database.
 
 **Using MySQL?** `python -m radar.pipeline export-tables` dumps the tables as CSV; `sql/mysql/` has the MySQL schema, a loader and the analysis queries. See [sql/mysql/README.md](sql/mysql/README.md).
