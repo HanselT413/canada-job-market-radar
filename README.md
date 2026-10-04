@@ -83,6 +83,8 @@ python -m radar.pipeline export
 pytest
 ```
 
+**Prefer pandas?** `notebooks/market_analysis.ipynb` reproduces the main analysis with plain pandas (`groupby`, `merge`, `pivot_table`, `crosstab`) and charts, reading the same database.
+
 **Using MySQL?** `python -m radar.pipeline export-tables` dumps the tables as CSV; `sql/mysql/` has the MySQL schema, a loader and the analysis queries. See [sql/mysql/README.md](sql/mysql/README.md).
 
 Edit `config/search.yaml` to change search terms, city, or target companies, and `config/skills.yaml` to add skills. No code changes needed.
