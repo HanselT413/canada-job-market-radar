@@ -107,11 +107,25 @@ print(agency_share.to_string())
 
 direct = jobs[(jobs["is_staffing_agency"] == 0) & (jobs["company"] != "")]
 direct["company"].value_counts().head(15)"""),
-    md("## 7. Seniority mix\n\nHow many openings are entry level (`new_grad`) vs. mid or senior, per role type."),
+    md("## 7. Target employers\n\nPostings from the companies in `config/target_companies.yaml` (tier 1 = top choices, tier 2 = solid alternatives)."),
+    code("""targets = jobs[jobs["target_tier"] > 0]
+print(f"{len(targets)} open roles at target employers "
+      f"({(targets['target_tier'] == 1).sum()} tier 1, {(targets['target_tier'] == 2).sum()} tier 2)")
+
+summary = (targets.groupby(["target_tier", "company"])
+           .agg(open_roles=("job_id", "count"),
+                entry_level=("seniority", lambda s: s.isin(["new_grad", "intern"]).sum()),
+                role_types=("role_family", lambda s: ", ".join(sorted(set(s)))))
+           .sort_values(["target_tier", "open_roles"], ascending=[True, False]))
+summary.head(25)"""),
+    code("""# Tier 1 roles by role type: where your target employers are hiring
+pd.crosstab(targets["company"], targets["role_family"]).loc[
+    targets.loc[targets["target_tier"] == 1, "company"].value_counts().index[:15]]"""),
+    md("## 8. Seniority mix\n\nHow many openings are entry level (`new_grad`) vs. mid or senior, per role type."),
     code("""seniority = pd.crosstab(jobs["role_family"], jobs["seniority"])
 seniority["new_grad_share_%"] = (100 * seniority.get("new_grad", 0) / seniority.sum(axis=1)).round(1)
 seniority.sort_values("new_grad_share_%", ascending=False)"""),
-    md("""## 8. Notes for interpretation
+    md("""## 9. Notes for interpretation
 
 - **Snippets undercount skills** (Adzuna); use rankings and the full-JD section for shares.
 - **Full-JD postings skew to tech and fintech**; large banks mostly use applicant systems with no public API.

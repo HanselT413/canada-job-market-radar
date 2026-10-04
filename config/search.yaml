@@ -38,6 +38,7 @@ greenhouse:
   - {token: faire, company: Faire}
   - {token: geotab, company: Geotab}
   - {token: hootsuite, company: Hootsuite}
+  - {token: shakepay, company: Shakepay}
 lever:
   - {company: applydigital, display: Apply Digital}
   - {company: achievers, display: Achievers}
@@ -45,11 +46,16 @@ lever:
   - {company: kepler, display: Kepler Communications}
   - {company: fullscript, display: Fullscript}
   - {company: riocan, display: RioCan}
+  - {company: eqbank, display: EQ Bank}
+  - {company: waveapps, display: Wave Financial}
 ashby:
   - {org: wealthsimple, company: Wealthsimple}
   - {org: cohere, company: Cohere}
   - {org: 1password, company: 1Password}
   - {org: koho, company: KOHO}
+  - {org: neofinancial, company: Neo Financial}
+  - {org: float, company: Float Financial}
+  - {org: docebo, company: Docebo}
 
 # Workday career sites (large banks, insurers, retailers). Not a documented API, so the
 # fetcher checks robots.txt first, sends at most one request per second, and downloads
@@ -67,9 +73,43 @@ workday:
   - {host: interac.wd3.myworkdayjobs.com, tenant: interac, site: Interac, company: Interac}
   - {host: otppb.wd3.myworkdayjobs.com, tenant: otppb, site: OntarioTeachers_Careers, company: Ontario Teachers' Pension Plan}
   - {host: cppib.wd10.myworkdayjobs.com, tenant: cppib, site: cppinvestments, company: CPP Investments}
+  # Added from the target-company list (verified October 2026)
+  - {host: pwc.wd3.myworkdayjobs.com, tenant: pwc, site: Global_Experienced_Careers, company: PwC Canada}
+  - {host: accenture.wd103.myworkdayjobs.com, tenant: accenture, site: AccentureCareers, company: Accenture}
+  - {host: moneris.wd3.myworkdayjobs.com, tenant: moneris, site: Moneris, company: Moneris}
+  - {host: thomsonreuters.wd5.myworkdayjobs.com, tenant: thomsonreuters, site: External_Career_Site, company: Thomson Reuters}
+  - {host: brookfield.wd5.myworkdayjobs.com, tenant: brookfield, site: brookfield, company: Brookfield}
+  - {host: bdo.wd3.myworkdayjobs.com, tenant: bdo, site: BDO, company: BDO Canada}
+  - {host: bdc.wd10.myworkdayjobs.com, tenant: bdc, site: BDC_Careers, company: BDC}
+  - {host: enbridge.wd3.myworkdayjobs.com, tenant: enbridge, site: enbridge_careers, company: Enbridge}
+  - {host: magna.wd3.myworkdayjobs.com, tenant: magna, site: Magna, company: Magna}
+  - {host: aviva.wd1.myworkdayjobs.com, tenant: aviva, site: External, company: Aviva Canada}
+  - {host: agf.wd3.myworkdayjobs.com, tenant: agf, site: AGF_Careers, company: AGF Management}
+  - {host: ci.wd3.myworkdayjobs.com, tenant: ci, site: CI_FINANCIAL_EXTERNAL_CAREER-SITE, company: CI Financial}
+  - {host: rsm.wd1.myworkdayjobs.com, tenant: rsm, site: RSMCareers, company: RSM Canada}
+  - {host: roberthalf.wd1.myworkdayjobs.com, tenant: roberthalf, site: ProtivitiNA, company: Protiviti}
+  - {host: ia.wd3.myworkdayjobs.com, tenant: ia, site: Professional, company: iA Financial Group}
+  - {host: beneva.wd10.myworkdayjobs.com, tenant: beneva, site: BenevaSite_carriere, company: Beneva}
+  - {host: travelers.wd5.myworkdayjobs.com, tenant: travelers, site: External, company: Travelers Canada}
+  - {host: hubinternational.wd1.myworkdayjobs.com, tenant: hubinternational, site: HUBInternational, company: HUB International}
+  - {host: navcanada.wd10.myworkdayjobs.com, tenant: navcanada, site: NAV_Careers, company: NAV CANADA}
+  - {host: omers.wd3.myworkdayjobs.com, tenant: omers, site: OMERS_External, company: OMERS}
+  - {host: hoopp.wd10.myworkdayjobs.com, tenant: hoopp, site: HOOPP, company: HOOPP}
+  - {host: investpsp.wd3.myworkdayjobs.com, tenant: investpsp, site: psp_careers, company: PSP Investments}
+  - {host: fieracapital.wd3.myworkdayjobs.com, tenant: fieracapital, site: Career, company: Fiera Capital}
+  - {host: aritzia.wd3.myworkdayjobs.com, tenant: aritzia, site: External, company: Aritzia}
+  - {host: cogeco.wd3.myworkdayjobs.com, tenant: cogeco, site: Cogeco_Careers, company: Cogeco}
+  - {host: colliers.wd3.myworkdayjobs.com, tenant: colliers, site: Colliers-External-Career-Site, company: Colliers}
+  - {host: tmx.wd3.myworkdayjobs.com, tenant: tmx, site: TMX_Careers, company: TMX Group}
+  - {host: rbi.wd3.myworkdayjobs.com, tenant: rbi, site: RBI_External_Career_Site, company: Restaurant Brands International}
+  - {host: unilever.wd3.myworkdayjobs.com, tenant: unilever, site: Unilever_Experienced_Professionals, company: Unilever}
+  - {host: unilever.wd3.myworkdayjobs.com, tenant: unilever, site: Unilever_Early_Careers, company: Unilever}
+  - {host: sec.wd3.myworkdayjobs.com, tenant: sec, site: Samsung_Careers, company: Samsung}
+  - {host: pg.wd5.myworkdayjobs.com, tenant: pg, site: "1000", company: Procter & Gamble}
 workday_settings:
-  search_terms: [analyst, product manager, product owner, compliance, insights]
-  max_pages_per_term: 3       # 20 postings per page
+  # Broad terms; titles are then filtered with ats_title_filter below
+  search_terms: [analyst, product, compliance]
+  max_pages_per_term: 4       # 20 postings per page
   max_new_details: 80         # per company per run; the rest are picked up next run
 
 # Company boards list every role, so keep only titles containing one of these.

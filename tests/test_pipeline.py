@@ -326,3 +326,22 @@ def test_add_workday_helper(tmp_path):
     assert mod.add_to_config(entry, "Acme", cfg) == "already in the list"
     data = yaml.safe_load(cfg.read_text())
     assert data["workday"][-1] == {"host": "acme.wd5.myworkdayjobs.com", "tenant": "acme", "site": "Careers", "company": "Acme"}
+
+
+def test_target_tier():
+    from radar.clean import target_tier
+    assert target_tier("The Toronto-Dominion Bank") == 1
+    assert target_tier("Royal Bank of Canada") == 1
+    assert target_tier("Tim Hortons") == 2          # alias of Restaurant Brands International
+    assert target_tier("Mackenzie Health") == 0     # hospital, not Mackenzie Investments
+    assert target_tier("TDL Group") == 0            # "TD" must match as a whole word
+    assert target_tier("") == 0
+
+
+def test_search_config_is_valid():
+    cfg = yaml.safe_load(open("config/search.yaml"))
+    for b in cfg["workday"]:
+        assert set(b) == {"host", "tenant", "site", "company"}
+        assert b["host"].startswith(b["tenant"] + ".") and b["host"].endswith(".myworkdayjobs.com")
+    keys = [(b["host"], b["site"]) for b in cfg["workday"]]
+    assert len(keys) == len(set(keys))

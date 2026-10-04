@@ -68,6 +68,19 @@ GROUP BY company
 ORDER BY open_roles DESC
 LIMIT 25;
 
+-- name: target_company_openings
+-- Open roles at your target employers, by role family
+SELECT
+    target_tier,
+    company,
+    role_family,
+    COUNT(*) AS open_roles,
+    SUM(CASE WHEN seniority IN ('new_grad', 'intern') THEN 1 ELSE 0 END) AS entry_level
+FROM jobs
+WHERE target_tier > 0
+GROUP BY target_tier, company, role_family
+ORDER BY target_tier, open_roles DESC;
+
 -- name: agency_share
 -- How much of the market is posted through recruitment agencies
 SELECT

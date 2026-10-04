@@ -84,6 +84,8 @@ python -m radar.pipeline export
 pytest
 ```
 
+**Target employers:** `config/target_companies.yaml` lists ~130 employers in two tiers (with name aliases). Every posting from them, from any source, is tagged with `target_tier`; see `target_company_openings.csv` and section 7 of the notebook. Of the list, about 60 publish full job descriptions through a supported system; the rest (e.g. Apple, Google, Scotiabank, Rogers, EY) use their own or SuccessFactors / Taleo / iCIMS sites and are covered through Adzuna only.
+
 **Add a Workday company:** copy any URL from its career site and run `python3 scripts/add_workday.py "<url>" "Company Name"`.
 
 **Run it automatically (macOS):** `bash scripts/install_daily_mac.sh` schedules a daily run at 9:07 am (logs in `data/logs/`). Keep the project outside Downloads / Desktop / Documents, which macOS blocks for background jobs.
@@ -109,7 +111,7 @@ Adzuna, Greenhouse, Lever and Ashby are documented public APIs; Workday is acces
 |---|---|---|
 | [Adzuna API](https://developer.adzuna.com/) | Broad market coverage, salaries, **JD snippet only** | Hiring volume, who is hiring, salaries, trends |
 | Greenhouse / Lever / Ashby job boards | **Full job descriptions** from tech and fintech employers (`config/search.yaml`) | Accurate skill demand (`skill_demand_full_jd`) |
-| Workday career sites | **Full job descriptions** from banks, insurers, pension funds and retailers (TD, BMO, CIBC, RBC early talent, Manulife, Sun Life, ...) | Skill demand in financial services and enterprise roles |
+| Workday career sites | **Full job descriptions** from 44 employer sites: banks, insurers, pension funds, consulting, retail and consumer goods (TD, BMO, CIBC, RBC early talent, Manulife, Sun Life, PwC, Accenture, OMERS, TMX, ...) | Skill demand in financial services and enterprise roles |
 
 ## Limitations
 
