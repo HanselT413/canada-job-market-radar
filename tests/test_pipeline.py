@@ -437,3 +437,24 @@ def test_retag_updates_old_rows(tmp_path):
         assert row == ("product_manager", "Fintech & Payments", 1)
         skills = {r[0] for r in conn.execute("SELECT skill FROM job_skills")}
         assert {"Generative AI / LLMs", "dbt"} <= skills
+
+
+def test_workday_retries_transient_errors():
+    import requests as rq
+    from radar.sources.workday import _with_retry
+    calls = {"n": 0}
+
+    def flaky():
+        calls["n"] += 1
+        if calls["n"] < 3:
+            raise rq.exceptions.ConnectionError("reset by peer")
+        return "ok"
+
+    waits = []
+    assert _with_retry(flaky, waits.append) == "ok" and calls["n"] == 3 and waits == [5.0, 10.0]
+
+    def always_down():
+        raise rq.exceptions.Timeout("read timed out")
+    import pytest
+    with pytest.raises(rq.exceptions.Timeout):
+        _with_retry(always_down, lambda s: None)

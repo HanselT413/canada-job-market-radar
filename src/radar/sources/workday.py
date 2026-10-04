@@ -24,6 +24,24 @@ HEADERS = {
     "User-Agent": "canada-job-market-radar (personal labour-market research; low volume)",
 }
 PAGE_SIZE = 20  # Workday's maximum per search page
+RETRIES = 2          # extra attempts after a timeout or dropped connection
+RETRY_WAIT = 5.0     # seconds, doubled on each retry
+
+
+def _with_retry(call, sleep, *args, **kwargs):
+    """Retry transient network failures (timeouts, resets); other errors pass through."""
+    wait = RETRY_WAIT
+    for attempt in range(RETRIES + 1):
+        try:
+            resp = call(*args, **kwargs)
+            if getattr(resp, "status_code", 200) in (429, 502, 503, 504) and attempt < RETRIES:
+                sleep(wait); wait *= 2
+                continue
+            return resp
+        except (requests.exceptions.Timeout, requests.exceptions.ConnectionError):
+            if attempt == RETRIES:
+                raise
+            sleep(wait); wait *= 2
 
 
 @dataclass
@@ -90,7 +108,7 @@ def fetch_workday(
     for term in search_terms:
         for page in range(max_pages_per_term):
             body = {"appliedFacets": {}, "limit": PAGE_SIZE, "offset": page * PAGE_SIZE, "searchText": term}
-            resp = session.post(f"{base}/jobs", json=body, headers=HEADERS, timeout=30)
+            resp = _with_retry(session.post, sleep, f"{base}/jobs", json=body, headers=HEADERS, timeout=30)
             resp.raise_for_status()
             postings = resp.json().get("jobPostings") or []
             sleep(pause)
@@ -109,7 +127,7 @@ def fetch_workday(
             continue
         if len(result.new_jobs) >= max_new_details:
             break  # the rest are picked up on the next run
-        resp = session.get(f"{base}{path}", headers=HEADERS, timeout=30)
+        resp = _with_retry(session.get, sleep, f"{base}{path}", headers=HEADERS, timeout=30)
         sleep(pause)
         if resp.status_code != 200:
             continue
