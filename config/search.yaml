@@ -4,6 +4,7 @@ adzuna:
   where: Toronto
   pages_per_query: 2        # 50 results per page
   max_days_old: 30
+  title_only: true          # match search terms in the job title only (more precise)
   queries:
     - data analyst
     - product analyst

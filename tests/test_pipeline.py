@@ -183,3 +183,39 @@ def test_commercial_insight_skills():
             "Pricing Analysis", "Marketing Analytics"} <= found
     # "data pipelines" must not count as a sales pipeline
     assert "Sales Pipeline Analysis" not in {s for _, s in ex.extract("Build ETL data pipelines")}
+
+
+def test_adzuna_title_only_request(monkeypatch):
+    """Search terms go in title_only; falls back to full-text 'what' if the API returns 400."""
+    from radar.sources import adzuna
+
+    calls = []
+
+    class FakeResp:
+        def __init__(self, status, results):
+            self.status_code, self._results = status, results
+        def raise_for_status(self):
+            if self.status_code >= 400:
+                raise RuntimeError(self.status_code)
+        def json(self):
+            return {"results": self._results}
+
+    def fake_get(url, params, timeout):
+        calls.append(dict(params))
+        if "title_only" in params and reject_title_only:
+            return FakeResp(400, [])
+        return FakeResp(200, [{"id": 1}] if len(calls) <= 2 else [])
+
+    monkeypatch.setenv("ADZUNA_APP_ID", "x")
+    monkeypatch.setenv("ADZUNA_APP_KEY", "y")
+    monkeypatch.setattr(adzuna.requests, "get", fake_get)
+    monkeypatch.setattr(adzuna.time, "sleep", lambda s: None)
+
+    reject_title_only = False
+    list(adzuna.fetch_adzuna("sales analyst", pages=1))
+    assert calls[0]["title_only"] == "sales analyst" and "what" not in calls[0]
+
+    calls.clear()
+    reject_title_only = True
+    list(adzuna.fetch_adzuna("sales analyst", pages=1))
+    assert calls[-1]["what"] == "sales analyst" and "title_only" not in calls[-1]

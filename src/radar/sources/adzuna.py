@@ -21,6 +21,7 @@ def fetch_adzuna(
     results_per_page: int = 50,
     max_days_old: int = 30,
     pause: float = 2.5,   # ~24 calls/minute, under the trial plan's per-minute limit
+    title_only: bool = True,
 ) -> Iterator[dict]:
     """Yield raw Adzuna job dicts for one search query."""
     app_id = os.environ.get("ADZUNA_APP_ID")
@@ -38,7 +39,16 @@ def fetch_adzuna(
             "max_days_old": max_days_old,
             "content-type": "application/json",
         }
+        if title_only:
+            # Match keywords in the job title only. Without this, "sales analyst" also
+            # returns e.g. Sales Representative or Financial Analyst ads that mention sales.
+            params["title_only"] = what
+            params.pop("what")
         resp = requests.get(BASE_URL.format(page=page), params=params, timeout=30)
+        if resp.status_code == 400 and title_only:
+            # Fall back to full-text search if the API rejects title_only
+            params["what"] = params.pop("title_only")
+            resp = requests.get(BASE_URL.format(page=page), params=params, timeout=30)
         resp.raise_for_status()
         results = resp.json().get("results", [])
         if not results:
